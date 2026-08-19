@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const PharmacySchema = new mongoose.Schema({
   caseId: { type: String, required: true, trim: true },
   prescriptionDate: { type: Date, default: Date.now },
-  prescriptionNumber: { type: String, unique: true, sparse: true },
+  prescriptionNumber: { type: String,  sparse: true },
   veterinarian: { type: String, default: '' },
   medicine: {
     name: { type: String, required: true },

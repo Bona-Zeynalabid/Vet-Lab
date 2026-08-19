@@ -71,16 +71,14 @@ export default function ParasitologyDashboardPage() {
     ...cases
       .filter(
         (c) =>
-          !parasitologyRecords.some(
-            (p) => p.caseId === c.caseInfo?.caseNumber
-          )
+          !parasitologyRecords.some((p) => p.caseId === c.caseInfo?.caseNumber),
       )
       .map((c) => ({ type: "case", data: c })),
     ...labRequests.map((req) => ({ type: "labRequest", data: req })),
   ];
 
   const completedCases = cases.filter((c) =>
-    parasitologyRecords.some((p) => p.caseId === c.caseInfo?.caseNumber)
+    parasitologyRecords.some((p) => p.caseId === c.caseInfo?.caseNumber),
   );
 
   const displayItems =
@@ -100,6 +98,12 @@ export default function ParasitologyDashboardPage() {
             Parasitology Dashboard
           </h1>
         </div>
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="px-4 py-2 bg-slate-800 text-white text-[10px] font-mono uppercase tracking-widest font-bold hover:bg-slate-700 transition-colors"
+        >
+          Back to Dashboard
+        </button>
       </div>
 
       {/* Tabs & Table */}
@@ -162,7 +166,7 @@ export default function ParasitologyDashboardPage() {
                   if (item.type === "case") {
                     const c = item.data;
                     const existingRecord = parasitologyRecords.find(
-                      (p) => p.caseId === c.caseInfo?.caseNumber
+                      (p) => p.caseId === c.caseInfo?.caseNumber,
                     );
                     return (
                       <tr key={c._id} className="hover:bg-slate-50">
@@ -202,7 +206,7 @@ export default function ParasitologyDashboardPage() {
                               <button
                                 onClick={() =>
                                   router.push(
-                                    `/dashboard/parasitology/${existingRecord._id}`
+                                    `/dashboard/parasitology/${existingRecord._id}`,
                                   )
                                 }
                                 className="px-2 py-1 bg-slate-800 text-white text-[9px] uppercase tracking-wider hover:bg-slate-700"
@@ -213,7 +217,7 @@ export default function ParasitologyDashboardPage() {
                               <button
                                 onClick={() =>
                                   router.push(
-                                    `/forms/parasitology?caseId=${c.caseInfo?.caseNumber}`
+                                    `/forms/parasitology?caseId=${c.caseInfo?.caseNumber}`,
                                   )
                                 }
                                 className="px-2 py-1 bg-slate-800 text-white text-[9px] uppercase tracking-wider hover:bg-slate-700"
@@ -255,7 +259,7 @@ export default function ParasitologyDashboardPage() {
                             <button
                               onClick={() =>
                                 router.push(
-                                  `/forms/parasitology?caseId=${req.caseId}&doc=${req.doc}`
+                                  `/forms/parasitology?caseId=${req.caseId}&doc=${req.doc}`,
                                 )
                               }
                               className="px-2 py-1 bg-slate-800 text-white text-[9px] uppercase tracking-wider hover:bg-slate-700"
@@ -308,12 +312,44 @@ export default function ParasitologyDashboardPage() {
                       Patient Information
                     </h3>
                     <div className="grid grid-cols-2 gap-1 text-[10px] font-mono">
-                      <div><span className="text-slate-500">Species:</span> <span className="font-semibold">{selectedCase.patient?.species || "-"}</span></div>
-                      <div><span className="text-slate-500">Breed:</span> <span className="font-semibold">{selectedCase.patient?.breed || "-"}</span></div>
-                      <div><span className="text-slate-500">Sex:</span> <span className="font-semibold">{selectedCase.patient?.sex || "-"}</span></div>
-                      <div><span className="text-slate-500">Age:</span> <span className="font-semibold">{selectedCase.patient?.age || "-"}</span></div>
-                      <div><span className="text-slate-500">Weight:</span> <span className="font-semibold">{selectedCase.patient?.weight ? `${selectedCase.patient.weight} KG` : "-"}</span></div>
-                      <div><span className="text-slate-500">Animal ID:</span> <span className="font-semibold">{selectedCase.patient?.animalId || "-"}</span></div>
+                      <div>
+                        <span className="text-slate-500">Species:</span>{" "}
+                        <span className="font-semibold">
+                          {selectedCase.patient?.species || "-"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Breed:</span>{" "}
+                        <span className="font-semibold">
+                          {selectedCase.patient?.breed || "-"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Sex:</span>{" "}
+                        <span className="font-semibold">
+                          {selectedCase.patient?.sex || "-"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Age:</span>{" "}
+                        <span className="font-semibold">
+                          {selectedCase.patient?.age || "-"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Weight:</span>{" "}
+                        <span className="font-semibold">
+                          {selectedCase.patient?.weight
+                            ? `${selectedCase.patient.weight} KG`
+                            : "-"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Animal ID:</span>{" "}
+                        <span className="font-semibold">
+                          {selectedCase.patient?.animalId || "-"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="border border-slate-300 p-3 space-y-2">
@@ -321,11 +357,38 @@ export default function ParasitologyDashboardPage() {
                       Owner & Clinical Info
                     </h3>
                     <div className="grid grid-cols-1 gap-1 text-[10px] font-mono">
-                      <div><span className="text-slate-500">Owner:</span> <span className="font-semibold">{selectedCase.owner?.fullName || "-"}</span></div>
-                      <div><span className="text-slate-500">Phone:</span> <span className="font-semibold">{selectedCase.owner?.telephone || "-"}</span></div>
-                      <div><span className="text-slate-500">Complaint:</span> <span className="font-semibold">{selectedCase.anamnesis?.primaryComplaint || "-"}</span></div>
-                      <div><span className="text-slate-500">Temperature:</span> <span className="font-semibold">{selectedCase.physicalExam?.temperature ? `${selectedCase.physicalExam.temperature}°C` : "-"}</span></div>
-                      <div><span className="text-slate-500">Demeanor:</span> <span className="font-semibold">{selectedCase.physicalExam?.demeanor || "-"}</span></div>
+                      <div>
+                        <span className="text-slate-500">Owner:</span>{" "}
+                        <span className="font-semibold">
+                          {selectedCase.owner?.fullName || "-"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Phone:</span>{" "}
+                        <span className="font-semibold">
+                          {selectedCase.owner?.telephone || "-"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Complaint:</span>{" "}
+                        <span className="font-semibold">
+                          {selectedCase.anamnesis?.primaryComplaint || "-"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Temperature:</span>{" "}
+                        <span className="font-semibold">
+                          {selectedCase.physicalExam?.temperature
+                            ? `${selectedCase.physicalExam.temperature}°C`
+                            : "-"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Demeanor:</span>{" "}
+                        <span className="font-semibold">
+                          {selectedCase.physicalExam?.demeanor || "-"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -336,37 +399,50 @@ export default function ParasitologyDashboardPage() {
                     Required Lab Investigations
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {["blood", "urine", "feces", "nasal", "rumen"].map((type) => {
-                      const tests = selectedRequest
-                        ? selectedRequest.labDirectives?.[type]?.tests
-                        : selectedCase.labDirectives?.[type]?.tests;
-                      const notes = selectedRequest
-                        ? selectedRequest.labDirectives?.[type]?.notes
-                        : selectedCase.labDirectives?.[type]?.notes;
-                      return (
-                        <div key={type} className="border border-slate-300 p-3">
-                          <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-800 bg-slate-100 px-2 py-1 mb-2">
-                            {type} Tests
-                          </h4>
-                          {tests?.length > 0 ? (
-                            <ul className="space-y-0.5">
-                              {tests.map((test, i) => (
-                                <li key={i} className="text-[10px] font-mono text-slate-700 flex items-start gap-1">
-                                  <span className="text-slate-400 mt-0.5">▪</span> {test}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-[10px] font-mono text-slate-400 italic">None specified</p>
-                          )}
-                          {notes && (
-                            <p className="text-[10px] font-mono text-slate-500 mt-1 border-t border-slate-200 pt-1">
-                              Note: {notes}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {["blood", "urine", "feces", "nasal", "rumen"].map(
+                      (type) => {
+                        const tests = selectedRequest
+                          ? selectedRequest.labDirectives?.[type]?.tests
+                          : selectedCase.labDirectives?.[type]?.tests;
+                        const notes = selectedRequest
+                          ? selectedRequest.labDirectives?.[type]?.notes
+                          : selectedCase.labDirectives?.[type]?.notes;
+                        return (
+                          <div
+                            key={type}
+                            className="border border-slate-300 p-3"
+                          >
+                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-800 bg-slate-100 px-2 py-1 mb-2">
+                              {type} Tests
+                            </h4>
+                            {tests?.length > 0 ? (
+                              <ul className="space-y-0.5">
+                                {tests.map((test, i) => (
+                                  <li
+                                    key={i}
+                                    className="text-[10px] font-mono text-slate-700 flex items-start gap-1"
+                                  >
+                                    <span className="text-slate-400 mt-0.5">
+                                      ▪
+                                    </span>{" "}
+                                    {test}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-[10px] font-mono text-slate-400 italic">
+                                None specified
+                              </p>
+                            )}
+                            {notes && (
+                              <p className="text-[10px] font-mono text-slate-500 mt-1 border-t border-slate-200 pt-1">
+                                Note: {notes}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      },
+                    )}
                   </div>
                 </div>
 
@@ -376,14 +452,54 @@ export default function ParasitologyDashboardPage() {
                     Physical Exam & History
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-1 text-[10px] font-mono">
-                    <div><span className="text-slate-500">BCS:</span> <span className="font-semibold">{selectedCase.physicalExam?.bcs || "-"}</span></div>
-                    <div><span className="text-slate-500">Mucous Memb:</span> <span className="font-semibold">{selectedCase.physicalExam?.mucousMembrane || "-"}</span></div>
-                    <div><span className="text-slate-500">Resp Rate:</span> <span className="font-semibold">{selectedCase.physicalExam?.respiratoryRate || "-"}</span></div>
-                    <div><span className="text-slate-500">CRT:</span> <span className="font-semibold">{selectedCase.physicalExam?.crt || "-"}</span></div>
-                    <div><span className="text-slate-500">Pulse:</span> <span className="font-semibold">{selectedCase.physicalExam?.pulseRate || "-"}</span></div>
-                    <div><span className="text-slate-500">Heart:</span> <span className="font-semibold">{selectedCase.physicalExam?.heartSound || "-"}</span></div>
-                    <div><span className="text-slate-500">GI Motility:</span> <span className="font-semibold">{selectedCase.physicalExam?.giMotility || "-"}</span></div>
-                    <div><span className="text-slate-500">Lung:</span> <span className="font-semibold">{selectedCase.physicalExam?.lungSound || "-"}</span></div>
+                    <div>
+                      <span className="text-slate-500">BCS:</span>{" "}
+                      <span className="font-semibold">
+                        {selectedCase.physicalExam?.bcs || "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Mucous Memb:</span>{" "}
+                      <span className="font-semibold">
+                        {selectedCase.physicalExam?.mucousMembrane || "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Resp Rate:</span>{" "}
+                      <span className="font-semibold">
+                        {selectedCase.physicalExam?.respiratoryRate || "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">CRT:</span>{" "}
+                      <span className="font-semibold">
+                        {selectedCase.physicalExam?.crt || "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Pulse:</span>{" "}
+                      <span className="font-semibold">
+                        {selectedCase.physicalExam?.pulseRate || "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Heart:</span>{" "}
+                      <span className="font-semibold">
+                        {selectedCase.physicalExam?.heartSound || "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">GI Motility:</span>{" "}
+                      <span className="font-semibold">
+                        {selectedCase.physicalExam?.giMotility || "-"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Lung:</span>{" "}
+                      <span className="font-semibold">
+                        {selectedCase.physicalExam?.lungSound || "-"}
+                      </span>
+                    </div>
                   </div>
                 </div>
 

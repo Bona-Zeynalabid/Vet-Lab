@@ -39,16 +39,9 @@ function PinPageContent() {
     try {
       const result = await credentialApi.verify(role, pin);
       if (result.success) {
-        // Clear any previous session
-        sessionStorage.removeItem("vet_auth_role");
-        sessionStorage.removeItem("vet_auth_route");
-        sessionStorage.removeItem("vet_auth_expiry");
-
-        // Save new session with 30‑minute expiry
-        const expiry = Date.now() + 30 * 60 * 1000;
-        sessionStorage.setItem("vet_auth_role", result.role);
-        sessionStorage.setItem("vet_auth_route", result.route);
-        sessionStorage.setItem("vet_auth_expiry", expiry.toString());
+        // Set per‑room unlock with 1‑hour expiry
+        const expiry = Date.now() + 60 * 60 * 1000; // 1 hour
+        sessionStorage.setItem(`vet_unlocked_${role}`, expiry.toString());
 
         const redirectTo = nextParam ? decodeURIComponent(nextParam) : result.route;
         router.push(redirectTo);

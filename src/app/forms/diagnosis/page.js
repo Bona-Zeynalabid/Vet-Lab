@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { diagnosisApi, pharmacyApi } from "@/lib/api";
+import { diagnosisApi, pharmacyApi, medicineApi } from "@/lib/api";
+import { getLoggedInUserName } from "@/lib/userUtils";
 
 const confirmationMethods = [
   "Clinical Signs", "Lab Results", "Radiography", "Ultrasound",
@@ -19,6 +20,7 @@ export default function DoctorDiagnosisPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [savedRecord, setSavedRecord] = useState(null);
+  const [medicinesList, setMedicinesList] = useState([]);
 
   const totalSteps = 4;
 
@@ -43,6 +45,26 @@ export default function DoctorDiagnosisPage() {
       setFormData((prev) => ({ ...prev, caseNumber: caseIdFromUrl }));
     }
   }, [caseIdFromUrl]);
+
+  useEffect(() => {
+    const name = getLoggedInUserName();
+    if (name) {
+      setFormData(prev => ({ ...prev, attendingVet: name }));
+    }
+  }, []);
+
+  // Fetch medicines for autocomplete suggestions
+  useEffect(() => {
+    const fetchMedicines = async () => {
+      try {
+        const data = await medicineApi.list();
+        setMedicinesList(data || []);
+      } catch (err) {
+        console.error("Failed to fetch medicines:", err);
+      }
+    };
+    fetchMedicines();
+  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -203,7 +225,7 @@ export default function DoctorDiagnosisPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div><label className={labelStyle}>Case Number</label><input type="text" value={formData.caseNumber} onChange={(e) => handleInputChange("caseNumber", e.target.value)} className={inputStyle} readOnly={!!caseIdFromUrl} /></div>
                   <div><label className={labelStyle}>Date <span className="text-red-600">*</span></label><input type="date" required value={formData.date} onChange={(e) => handleInputChange("date", e.target.value)} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>Veterinarian <span className="text-red-600">*</span></label><input type="text" required placeholder="e.g. Dr. Smith" value={formData.attendingVet} onChange={(e) => handleInputChange("attendingVet", e.target.value)} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>Veterinarian <span className="text-red-600">*</span></label><input type="text" required readOnly placeholder="e.g. Dr. Smith" value={formData.attendingVet} onChange={(e) => handleInputChange("attendingVet", e.target.value)} className={inputStyle} /></div>
                 </div>
               </div>
             )}
@@ -246,7 +268,17 @@ export default function DoctorDiagnosisPage() {
                       {formData.medicines.length > 1 && <button type="button" onClick={() => removeMedicine(idx)} className="text-[10px] font-mono uppercase text-red-700 hover:underline">Remove</button>}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div><label className={labelStyle}>Name</label><input type="text" placeholder="e.g. Amoxicillin" value={med.name} onChange={(e) => handleMedicineChange(idx, "name", e.target.value)} className={inputStyle} /></div>
+                      <div>
+                        <label className={labelStyle}>Name</label>
+                        <input
+                          type="text"
+                          list="medicines-datalist"
+                          placeholder="e.g. Amoxicillin"
+                          value={med.name}
+                          onChange={(e) => handleMedicineChange(idx, "name", e.target.value)}
+                          className={inputStyle}
+                        />
+                      </div>
                       <div><label className={labelStyle}>Concentration</label><input type="text" placeholder="e.g. 250 mg/mL" value={med.concentration} onChange={(e) => handleMedicineChange(idx, "concentration", e.target.value)} className={inputStyle} /></div>
                       <div><label className={labelStyle}>Dosage</label><input type="text" placeholder="e.g. 10 mg/kg" value={med.dosage} onChange={(e) => handleMedicineChange(idx, "dosage", e.target.value)} className={inputStyle} /></div>
                       <div><label className={labelStyle}>Route</label><select value={med.route} onChange={(e) => handleMedicineChange(idx, "route", e.target.value)} className={inputStyle}><option value="">Select</option><option value="oral">Oral</option><option value="subcutaneous">SC</option><option value="intramuscular">IM</option><option value="intravenous">IV</option><option value="topical">Topical</option><option value="otic">Otic</option><option value="ophthalmic">Ophthalmic</option></select></div>
@@ -257,6 +289,11 @@ export default function DoctorDiagnosisPage() {
                     </div>
                   </div>
                 ))}
+                <datalist id="medicines-datalist">
+                  {medicinesList.map((med) => (
+                    <option key={med._id} value={med.name} />
+                  ))}
+                </datalist>
               </div>
             )}
 

@@ -49,6 +49,7 @@ const veterinaryCaseSchema = new mongoose.Schema({
   type: String,
   default: '',
 },
+  by: { type: String, default: '' },  
   anamnesis: {
     primaryComplaint: { type: String, default: '' },
     history: { type: String, default: '' },

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { casesApi } from "@/lib/api";
+import { getLoggedInUserName } from "@/lib/userUtils";
 
 const bloodTests = [
   "CBC / Hemogram",
@@ -76,6 +77,7 @@ export default function VeterinaryCaseForm() {
     caseNumber: "",
     lab: "",
     doc: "",
+    by: "",
     ownerName: "",
     address: "",
     telephone: "",
@@ -113,21 +115,48 @@ export default function VeterinaryCaseForm() {
 
   const totalSteps = 7;
 
+  // Fetch the next case number (only for new cases)
+  const fetchNextCaseNumber = async () => {
+    try {
+      const res = await fetch("/api/case/next-number");
+      const data = await res.json();
+      if (data.caseNumber) {
+        setFormData((prev) => ({ ...prev, caseNumber: data.caseNumber }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch next case number:", err);
+    }
+  };
+
+  // On mount: fetch case for edit or generate new number
   useEffect(() => {
     if (editId) {
       fetchCaseForEdit(editId);
+    } else {
+      fetchNextCaseNumber();
     }
   }, [editId]);
+
+  // Auto-fill "Recorded By" with logged-in user's name
+  useEffect(() => {
+    const name = getLoggedInUserName();
+    if (name) {
+      setFormData((prev) => ({ ...prev, by: name }));
+    }
+  }, []);
 
   const fetchCaseForEdit = async (id) => {
     setLoading(true);
     try {
       const data = await casesApi.getById(id);
       setFormData({
-        date: data.caseInfo?.date ? new Date(data.caseInfo.date).toISOString().split("T")[0] : "",
+        date: data.caseInfo?.date
+          ? new Date(data.caseInfo.date).toISOString().split("T")[0]
+          : "",
         caseNumber: data.caseInfo?.caseNumber || "",
         lab: data.lab || "",
         doc: data.doc || "",
+        by: data.by || "",
         ownerName: data.owner?.fullName || "",
         address: data.owner?.address || "",
         telephone: data.owner?.telephone || "",
@@ -186,10 +215,7 @@ export default function VeterinaryCaseForm() {
   const isCurrentStepValid = () => {
     switch (currentStep) {
       case 1:
-        return (
-          formData.date.trim() !== "" &&
-          formData.caseNumber.trim() !== ""
-        );
+        return formData.date.trim() !== "" && formData.caseNumber.trim() !== "";
       case 2:
         return formData.ownerName.trim() !== "";
       case 3:
@@ -206,7 +232,9 @@ export default function VeterinaryCaseForm() {
 
   const handleNext = () => {
     if (!isCurrentStepValid()) {
-      setError("Please complete all mandatory fields marked with (*) before proceeding.");
+      setError(
+        "Please complete all mandatory fields marked with (*) before proceeding.",
+      );
       return;
     }
     setError("");
@@ -235,6 +263,7 @@ export default function VeterinaryCaseForm() {
       caseNumber: "",
       lab: "",
       doc: "",
+      by: "",
       ownerName: "",
       address: "",
       telephone: "",
@@ -269,6 +298,11 @@ export default function VeterinaryCaseForm() {
       selectedRumenTests: [],
       rumenNotes: "",
     });
+
+    // If not editing, fetch a fresh case number
+    if (!editId) {
+      fetchNextCaseNumber();
+    }
   };
 
   const buildPayload = () => ({
@@ -283,7 +317,9 @@ export default function VeterinaryCaseForm() {
     },
     patient: {
       species: formData.species,
-      numberOfAnimals: formData.numberOfAnimals ? Number(formData.numberOfAnimals) : 1,
+      numberOfAnimals: formData.numberOfAnimals
+        ? Number(formData.numberOfAnimals)
+        : 1,
       breed: formData.breed,
       animalId: formData.animalId,
       sex: formData.sex,
@@ -292,6 +328,7 @@ export default function VeterinaryCaseForm() {
     },
     lab: formData.lab,
     doc: formData.doc,
+    by: formData.by,
     anamnesis: {
       primaryComplaint: formData.complaint,
       history: formData.history,
@@ -382,7 +419,8 @@ export default function VeterinaryCaseForm() {
           </div>
           {!submitted && (
             <div className="self-start sm:self-auto font-mono text-xs border border-slate-300 bg-white px-2.5 py-1 font-semibold text-slate-700">
-              STAGE {String(currentStep).padStart(2, "0")} / {String(totalSteps).padStart(2, "0")}
+              STAGE {String(currentStep).padStart(2, "0")} /{" "}
+              {String(totalSteps).padStart(2, "0")}
             </div>
           )}
         </header>
@@ -394,11 +432,17 @@ export default function VeterinaryCaseForm() {
                 {editId ? "Case Record Updated" : "Case Record Committed"}
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-600 font-mono break-all">
-                RECORD ID: {savedRecord?.caseInfo?.caseNumber || formData.caseNumber || "SYS-PENDING"} | STAMP: {new Date().toISOString()}
+                RECORD ID:{" "}
+                {savedRecord?.caseInfo?.caseNumber ||
+                  formData.caseNumber ||
+                  "SYS-PENDING"}{" "}
+                | STAMP: {new Date().toISOString()}
               </p>
             </div>
             <p className="text-xs text-slate-700 leading-relaxed border-t border-slate-200 pt-4">
-              {editId ? "The case record has been updated successfully." : "The clinical record has been written to the institutional database. Associated lab directives have been queued for processing."}
+              {editId
+                ? "The case record has been updated successfully."
+                : "The clinical record has been written to the institutional database. Associated lab directives have been queued for processing."}
             </p>
             <div className="pt-2 flex gap-2">
               <button
@@ -442,7 +486,9 @@ export default function VeterinaryCaseForm() {
                       type="date"
                       required
                       value={formData.date}
-                      onChange={(e) => handleInputChange("date", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("date", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -453,10 +499,20 @@ export default function VeterinaryCaseForm() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. VET-2026-001"
+                      placeholder="e.g. 01"
                       value={formData.caseNumber}
-                      onChange={(e) => handleInputChange("caseNumber", e.target.value)}
+                      readOnly
                       className={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelStyle}>Recorded By</label>
+                    <input
+                      type="text"
+                      value={formData.by}
+                      readOnly
+                      className={inputStyle}
+                      placeholder="Auto‑filled from your account"
                     />
                   </div>
                 </div>
@@ -479,7 +535,9 @@ export default function VeterinaryCaseForm() {
                     required
                     placeholder="Surname, First Name"
                     value={formData.ownerName}
-                    onChange={(e) => handleInputChange("ownerName", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("ownerName", e.target.value)
+                    }
                     className={inputStyle}
                   />
                 </div>
@@ -490,7 +548,9 @@ export default function VeterinaryCaseForm() {
                       type="text"
                       placeholder="Street, City, Postal Code"
                       value={formData.address}
-                      onChange={(e) => handleInputChange("address", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("address", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -500,7 +560,9 @@ export default function VeterinaryCaseForm() {
                       type="tel"
                       placeholder="Primary contact line"
                       value={formData.telephone}
-                      onChange={(e) => handleInputChange("telephone", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("telephone", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -525,7 +587,9 @@ export default function VeterinaryCaseForm() {
                       required
                       placeholder="e.g. Canine, Bovine, Feline"
                       value={formData.species}
-                      onChange={(e) => handleInputChange("species", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("species", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -536,7 +600,9 @@ export default function VeterinaryCaseForm() {
                       min="1"
                       placeholder="1"
                       value={formData.numberOfAnimals}
-                      onChange={(e) => handleInputChange("numberOfAnimals", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("numberOfAnimals", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -548,7 +614,9 @@ export default function VeterinaryCaseForm() {
                       type="text"
                       placeholder="Breed designation"
                       value={formData.breed}
-                      onChange={(e) => handleInputChange("breed", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("breed", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -558,7 +626,9 @@ export default function VeterinaryCaseForm() {
                       type="text"
                       placeholder="e.g. AID-99402"
                       value={formData.animalId}
-                      onChange={(e) => handleInputChange("animalId", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("animalId", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -605,7 +675,9 @@ export default function VeterinaryCaseForm() {
                       step="0.01"
                       placeholder="0.00"
                       value={formData.weight}
-                      onChange={(e) => handleInputChange("weight", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("weight", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -626,17 +698,23 @@ export default function VeterinaryCaseForm() {
                     rows={3}
                     placeholder="Statement of present illness or presenting condition..."
                     value={formData.complaint}
-                    onChange={(e) => handleInputChange("complaint", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("complaint", e.target.value)
+                    }
                     className={inputStyle}
                   />
                 </div>
                 <div>
-                  <label className={labelStyle}>Medical & Clinical History</label>
+                  <label className={labelStyle}>
+                    Medical & Clinical History
+                  </label>
                   <textarea
                     rows={4}
                     placeholder="Prior treatments, vaccination history, environmental exposure..."
                     value={formData.history}
-                    onChange={(e) => handleInputChange("history", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("history", e.target.value)
+                    }
                     className={inputStyle}
                   />
                 </div>
@@ -657,7 +735,9 @@ export default function VeterinaryCaseForm() {
                       type="text"
                       placeholder="e.g. BAR, Lethargic"
                       value={formData.demeanor}
-                      onChange={(e) => handleInputChange("demeanor", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("demeanor", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -677,7 +757,9 @@ export default function VeterinaryCaseForm() {
                       type="text"
                       placeholder="Pink, CRT < 2s"
                       value={formData.mucousMembrane}
-                      onChange={(e) => handleInputChange("mucousMembrane", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("mucousMembrane", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -687,7 +769,9 @@ export default function VeterinaryCaseForm() {
                       type="text"
                       placeholder="Min count"
                       value={formData.respiratoryRate}
-                      onChange={(e) => handleInputChange("respiratoryRate", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("respiratoryRate", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -707,7 +791,9 @@ export default function VeterinaryCaseForm() {
                       type="text"
                       placeholder="BPM"
                       value={formData.pulseRate}
-                      onChange={(e) => handleInputChange("pulseRate", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("pulseRate", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -717,7 +803,9 @@ export default function VeterinaryCaseForm() {
                       type="text"
                       placeholder="Normal / Abnormal"
                       value={formData.heartSound}
-                      onChange={(e) => handleInputChange("heartSound", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("heartSound", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -727,7 +815,9 @@ export default function VeterinaryCaseForm() {
                       type="text"
                       placeholder="Motility rating"
                       value={formData.giMotility}
-                      onChange={(e) => handleInputChange("giMotility", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("giMotility", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
@@ -738,18 +828,24 @@ export default function VeterinaryCaseForm() {
                       step="0.1"
                       placeholder="38.5"
                       value={formData.temperature}
-                      onChange={(e) => handleInputChange("temperature", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("temperature", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
                 </div>
                 <div>
-                  <label className={labelStyle}>Other Physical Examination Notes</label>
+                  <label className={labelStyle}>
+                    Other Physical Examination Notes
+                  </label>
                   <textarea
                     rows={3}
                     placeholder="Palpation findings, lesions, abnormalities..."
                     value={formData.otherClinicalFindings}
-                    onChange={(e) => handleInputChange("otherClinicalFindings", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("otherClinicalFindings", e.target.value)
+                    }
                     className={inputStyle}
                   />
                 </div>
@@ -785,7 +881,8 @@ export default function VeterinaryCaseForm() {
                 {formData.lab === "diagnosis" && (
                   <div>
                     <label className={labelStyle}>
-                      Assign to Doctor (Doc) <span className="text-red-600">*</span>
+                      Assign to Doctor (Doc){" "}
+                      <span className="text-red-600">*</span>
                     </label>
                     <select
                       value={formData.doc || ""}
@@ -807,11 +904,16 @@ export default function VeterinaryCaseForm() {
                   </legend>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {bloodTests.map((test) => (
-                      <label key={test} className="flex items-center space-x-2 text-xs cursor-pointer py-0.5">
+                      <label
+                        key={test}
+                        className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
+                      >
                         <input
                           type="checkbox"
                           checked={formData.selectedBloodTests.includes(test)}
-                          onChange={() => handleCheckboxToggle("selectedBloodTests", test)}
+                          onChange={() =>
+                            handleCheckboxToggle("selectedBloodTests", test)
+                          }
                           className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
                         />
                         <span className="text-slate-700 truncate">{test}</span>
@@ -822,7 +924,9 @@ export default function VeterinaryCaseForm() {
                     type="text"
                     placeholder="Specific blood diagnostic instructions..."
                     value={formData.bloodNotes}
-                    onChange={(e) => handleInputChange("bloodNotes", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("bloodNotes", e.target.value)
+                    }
                     className={inputStyle}
                   />
                 </fieldset>
@@ -833,11 +937,16 @@ export default function VeterinaryCaseForm() {
                   </legend>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {urineTests.map((test) => (
-                      <label key={test} className="flex items-center space-x-2 text-xs cursor-pointer py-0.5">
+                      <label
+                        key={test}
+                        className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
+                      >
                         <input
                           type="checkbox"
                           checked={formData.selectedUrineTests.includes(test)}
-                          onChange={() => handleCheckboxToggle("selectedUrineTests", test)}
+                          onChange={() =>
+                            handleCheckboxToggle("selectedUrineTests", test)
+                          }
                           className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
                         />
                         <span className="text-slate-700 truncate">{test}</span>
@@ -848,7 +957,9 @@ export default function VeterinaryCaseForm() {
                     type="text"
                     placeholder="Specific urinalysis instructions..."
                     value={formData.urineNotes}
-                    onChange={(e) => handleInputChange("urineNotes", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("urineNotes", e.target.value)
+                    }
                     className={inputStyle}
                   />
                 </fieldset>
@@ -859,11 +970,16 @@ export default function VeterinaryCaseForm() {
                   </legend>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {fecesTests.map((test) => (
-                      <label key={test} className="flex items-center space-x-2 text-xs cursor-pointer py-0.5">
+                      <label
+                        key={test}
+                        className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
+                      >
                         <input
                           type="checkbox"
                           checked={formData.selectedFecesTests.includes(test)}
-                          onChange={() => handleCheckboxToggle("selectedFecesTests", test)}
+                          onChange={() =>
+                            handleCheckboxToggle("selectedFecesTests", test)
+                          }
                           className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
                         />
                         <span className="text-slate-700 truncate">{test}</span>
@@ -874,7 +990,9 @@ export default function VeterinaryCaseForm() {
                     type="text"
                     placeholder="Specific parasitology instructions..."
                     value={formData.fecesNotes}
-                    onChange={(e) => handleInputChange("fecesNotes", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("fecesNotes", e.target.value)
+                    }
                     className={inputStyle}
                   />
                 </fieldset>
@@ -886,14 +1004,21 @@ export default function VeterinaryCaseForm() {
                     </legend>
                     <div className="space-y-1.5">
                       {nasalTests.map((test) => (
-                        <label key={test} className="flex items-center space-x-2 text-xs cursor-pointer py-0.5">
+                        <label
+                          key={test}
+                          className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
+                        >
                           <input
                             type="checkbox"
                             checked={formData.selectedNasalTests.includes(test)}
-                            onChange={() => handleCheckboxToggle("selectedNasalTests", test)}
+                            onChange={() =>
+                              handleCheckboxToggle("selectedNasalTests", test)
+                            }
                             className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
                           />
-                          <span className="text-slate-700 truncate">{test}</span>
+                          <span className="text-slate-700 truncate">
+                            {test}
+                          </span>
                         </label>
                       ))}
                     </div>
@@ -905,14 +1030,21 @@ export default function VeterinaryCaseForm() {
                     </legend>
                     <div className="space-y-1.5">
                       {rumenTests.map((test) => (
-                        <label key={test} className="flex items-center space-x-2 text-xs cursor-pointer py-0.5">
+                        <label
+                          key={test}
+                          className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
+                        >
                           <input
                             type="checkbox"
                             checked={formData.selectedRumenTests.includes(test)}
-                            onChange={() => handleCheckboxToggle("selectedRumenTests", test)}
+                            onChange={() =>
+                              handleCheckboxToggle("selectedRumenTests", test)
+                            }
                             className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
                           />
-                          <span className="text-slate-700 truncate">{test}</span>
+                          <span className="text-slate-700 truncate">
+                            {test}
+                          </span>
                         </label>
                       ))}
                     </div>
@@ -973,7 +1105,11 @@ export default function VeterinaryCaseForm() {
                     disabled={loading}
                     className="flex-1 sm:flex-none px-5 py-2 bg-slate-900 text-white text-[10px] font-mono uppercase tracking-widest font-bold hover:bg-black transition-colors text-center disabled:opacity-50"
                   >
-                    {loading ? "Saving..." : editId ? "Update Record" : "Commit Record"}
+                    {loading
+                      ? "Saving..."
+                      : editId
+                        ? "Update Record"
+                        : "Commit Record"}
                   </button>
                 )}
               </div>

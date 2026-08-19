@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hawassa University FVM Clinical Case Recording Sheet</title>
+  <style>
+    /* Page Setup for A4 Print */
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 13px;
+      color: #000;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Form Container */
+    .sheet-container {
+      width: 210mm;
+      min-height: 297mm;
+      background: #fff;
+      padding: 20mm;
+      box-sizing: border-box;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    }
+
+    /* Header Styling */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    img{
+      width: 120px;
+      height: 120px;  
+    }
+
+     img .brook{
+      width: 120px;
+      
+    }
+    .logo-placeholder {
+      width: 80px;
+      height: 80px;
+      border: 1px dashed #666;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      text-align: center;
+      color: #555;
+    }
+
+    .title {
+      text-align: center;
+      font-size: 15px;
+      font-weight: bold;
+      text-decoration: underline;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+
+    /* Form Layout Elements */
+    .row {
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 12px;
+      width: 100%;
+    }
+
+    .field {
+      display: flex;
+      align-items: flex-end;
+      white-space: nowrap;
+    }
+
+    .field-label {
+      font-weight: normal;
+      padding-right: 4px;
+    }
+
+    .bold-label {
+      font-weight: bold;
+      padding-right: 4px;
+    }
+
+    .line {
+      flex-grow: 1;
+      border-bottom: 1px solid #000;
+      margin-right: 12px;
+      min-width: 30px;
+      height: 1.1em;
+    }
+
+    .line:last-child {
+      margin-right: 0;
+    }
+
+    /* Section Spacing */
+    .section-gap {
+      margin-top: 18px;
+    }
+
+    /* Two Column Layout for Clinical Findings */
+    .two-column {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .column {
+      flex: 1;
+    }
+
+    /* Full Width Horizontal Lines for Text Areas */
+    .writing-lines {
+      width: 100%;
+      margin-top: 4px;
+      margin-bottom: 12px;
+    }
+
+    .writing-line {
+      width: 100%;
+      border-bottom: 1px solid #000;
+      height: 22px;
+    }
+
+    /* Print Optimization */
+    @media print {
+      body {
+        background-color: #fff;
+        padding: 0;
+      }
+      .sheet-container {
+        box-shadow: none;
+        padding: 0;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sheet-container">
+    
+    <!-- Top Header Logos -->
+    <div class="header">
+      <div class="logo-placeholder"><img src="src/assets/Screenshot 2025-12-18 091949.png" alt=""></div>
+      <div class="logo-placeholder"><img class="brook" src="src/assets/blogo.png" alt=""></div>
+    </div>
+
+    <!-- Main Title -->
+    <div class="title">
+      Hawassa University FVM Clinical Case Recording Sheet
+    </div>
+
+    <!-- Patient & Owner Info -->
+    <div class="row">
+      <span class="field-label">Date</span>
+      <div class="line"></div>
+      <span class="field-label">Case No.</span>
+      <div class="line" style="flex-grow: 2;"></div>
+    </div>
+
+    <div class="row">
+      <span class="field-label">Owner's Name</span>
+      <div class="line" style="flex-grow: 2;"></div>
+      <span class="field-label">Address</span>
+      <div class="line" style="flex-grow: 2;"></div>
+      <span class="field-label">Tel. No.</span>
+      <div class="line"></div>
+    </div>
+
+    <div class="row">
+      <span class="field-label">Species</span>
+      <div class="line"></div>
+      <span class="field-label">No. of Animals</span>
+      <div class="line"></div>
+      <span class="field-label">Breed</span>
+      <div class="line"></div>
+      <span class="field-label">Animal ID</span>
+      <div class="line"></div>
+    </div>
+
+    <div class="row">
+      <span class="field-label">Sex</span>
+      <div class="line"></div>
+      <span class="field-label">Age</span>
+      <div class="line"></div>
+      <span class="field-label">Body Weight</span>
+      <div class="line" style="flex-grow: 2;"></div>
+    </div>
+
+    <!-- Owner's Complaint -->
+    <div class="row section-gap">
+      <span class="bold-label">Owner's complaint:</span>
+      <div class="line"></div>
+    </div>
+
+    <!-- History / Anamnesis -->
+    <div class="row">
+      <span class="bold-label">History/ Anamnesis:</span>
+      <div class="line"></div>
+    </div>
+    <div class="writing-lines">
+      <div class="writing-line"></div>
+      <div class="writing-line"></div>
+    </div>
+
+    <!-- Clinical Findings Section -->
+    <div class="bold-label section-gap" style="margin-bottom: 8px;">Clinical Findings:</div>
+    
+    <div class="two-column">
+      <!-- Left Column -->
+      <div class="column">
+        <div class="row">
+          <span class="field-label">Demeanor:</span>
+          <div class="line"></div>
+        </div>
+        <div class="row">
+          <span class="field-label">Mucous membrane</span>
+          <div class="line"></div>
+        </div>
+        <div class="row">
+          <span class="field-label">Capillary Refill Time (CRT)</span>
+          <div class="line"></div>
+        </div>
+        <div class="row">
+          <span class="field-label">Heart Sound</span>
+          <div class="line"></div>
+        </div>
+        <div class="row">
+          <span class="field-label">Lung sound</span>
+          <div class="line"></div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="column">
+        <div class="row">
+          <span class="field-label">BCS:</span>
+          <div class="line"></div>
+        </div>
+        <div class="row">
+          <span class="field-label">Respiratory Rate (RR)</span>
+          <div class="line"></div>
+        </div>
+        <div class="row">
+          <span class="field-label">Pulse Rate</span>
+          <div class="line"></div>
+        </div>
+        <div class="row">
+          <span class="field-label">Gastro intestinal Motility</span>
+          <div class="line"></div>
+        </div>
+        <div class="row">
+          <span class="field-label">Temp. (T<sup>0</sup>)</span>
+          <div class="line"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Other Clinical Findings -->
+    <div class="row section-gap">
+      <span class="field-label">Other clinical findings</span>
+      <div class="line"></div>
+    </div>
+    <div class="writing-lines">
+      <div class="writing-line"></div>
+      <div class="writing-line"></div>
+      <div class="writing-line"></div>
+    </div>
+
+    <!-- Diagnosis & Treatment -->
+    <div class="row section-gap">
+      <span class="bold-label">Differential Diagnosis:</span>
+      <div class="line"></div>
+    </div>
+
+    <div class="row">
+      <span class="bold-label">Tentative Diagnosis:</span>
+      <div class="line"></div>
+    </div>
+
+    <div class="row">
+      <span class="bold-label">Sample Taken:</span>
+      <div class="line" style="flex-grow: 2;"></div>
+      <span class="bold-label">Lab. Methods Employed:</span>
+      <div class="line" style="flex-grow: 3;"></div>
+    </div>
+
+    <div class="row">
+      <span class="bold-label">Result:</span>
+      <div class="line"></div>
+    </div>
+
+    <div class="row">
+      <span class="bold-label">Definitive Diagnosis:</span>
+      <div class="line"></div>
+    </div>
+
+    <div class="row">
+      <span class="bold-label">Treatment Given:</span>
+      <div class="line"></div>
+    </div>
+    <div class="writing-lines">
+      <div class="writing-line"></div>
+    </div>
+
+    <div class="row section-gap">
+      <span class="bold-label">Prognosis:</span>
+      <div class="line"></div>
+    </div>
+
+    <div class="row">
+      <span class="bold-label">Advice to Owner:</span>
+      <div class="line"></div>
+    </div>
+    <div class="writing-lines">
+      <div class="writing-line"></div>
+    </div>
+
+    <!-- Footer Signature Line -->
+    <div class="row section-gap" style="margin-top: 40px;">
+      <span class="field-label">Name of Veterinarian in Charge</span>
+      <div class="line" style="flex-grow: 2;"></div>
+      <span class="field-label">Signature</span>
+      <div class="line"></div>
+    </div>
+
+  </div>
+
+</body>
+</html>

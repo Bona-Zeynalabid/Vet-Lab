@@ -25,6 +25,8 @@ export async function GET(request, { params }) {
       filter['owner.fullName'] = { $regex: searchParams.get('ownerName'), $options: 'i' };
     if (searchParams.has('lab'))
       filter.lab = searchParams.get('lab');
+    if (searchParams.has('by'))
+  filter.by = searchParams.get('by');
 
     const limit = parseInt(searchParams.get('limit') || '100');
     const skip = parseInt(searchParams.get('skip') || '0');

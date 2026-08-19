@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { parasitologyApi, parareqApi, labRequestApi } from "@/lib/api";
+import { getLoggedInUserName } from "@/lib/userUtils";
 
 const fecalMethods = ["Direct Smear", "Fecal Flotation", "Sedimentation", "Baermann Technique", "McMaster (Quantitative)"];
 
@@ -65,6 +66,13 @@ export default function ParasitologyPage() {
       setFormData((prev) => ({ ...prev, caseNumber: caseIdFromUrl }));
     }
   }, [caseIdFromUrl]);
+
+  useEffect(() => {
+  const name = getLoggedInUserName();
+  if (name) {
+    setFormData(prev => ({ ...prev, parasitologistName: name }));
+  }
+}, []);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -312,7 +320,7 @@ export default function ParasitologyPage() {
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2"><h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">Section 5: Sign-Off</h3></div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div><label className={labelStyle}>Parasitologist <span className="text-red-600">*</span></label><input type="text" required placeholder="Name" value={formData.parasitologistName} onChange={(e) => handleInputChange("parasitologistName", e.target.value)} className={inputStyle} /></div>
+                  <div><label className={labelStyle}>Parasitologist <span className="text-red-600">*</span></label><input type="text" required readOnly placeholder="Name" value={formData.parasitologistName} onChange={(e) => handleInputChange("parasitologistName", e.target.value)} className={inputStyle} /></div>
 
                   {docFromUrl ? (
                     <div>

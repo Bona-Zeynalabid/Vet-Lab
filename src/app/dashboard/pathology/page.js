@@ -67,14 +67,14 @@ export default function PathologyDashboardPage() {
     ...cases
       .filter(
         (c) =>
-          !pathologyRecords.some((p) => p.caseId === c.caseInfo?.caseNumber)
+          !pathologyRecords.some((p) => p.caseId === c.caseInfo?.caseNumber),
       )
       .map((c) => ({ type: "case", data: c })),
     ...labRequests.map((req) => ({ type: "labRequest", data: req })),
   ];
 
   const completedCases = cases.filter((c) =>
-    pathologyRecords.some((p) => p.caseId === c.caseInfo?.caseNumber)
+    pathologyRecords.some((p) => p.caseId === c.caseInfo?.caseNumber),
   );
 
   const displayItems =
@@ -94,6 +94,12 @@ export default function PathologyDashboardPage() {
             Pathology Dashboard
           </h1>
         </div>
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="px-4 py-2 bg-slate-800 text-white text-[10px] font-mono uppercase tracking-widest font-bold hover:bg-slate-700 transition-colors"
+        >
+          Back to Dashboard
+        </button>
       </div>
 
       {/* Tabs & Table */}
@@ -156,7 +162,7 @@ export default function PathologyDashboardPage() {
                   if (item.type === "case") {
                     const c = item.data;
                     const existingRecord = pathologyRecords.find(
-                      (p) => p.caseId === c.caseInfo?.caseNumber
+                      (p) => p.caseId === c.caseInfo?.caseNumber,
                     );
                     return (
                       <tr key={c._id} className="hover:bg-slate-50">
@@ -196,7 +202,7 @@ export default function PathologyDashboardPage() {
                               <button
                                 onClick={() =>
                                   router.push(
-                                    `/dashboard/pathology/${existingRecord._id}`
+                                    `/dashboard/pathology/${existingRecord._id}`,
                                   )
                                 }
                                 className="px-2 py-1 bg-slate-800 text-white text-[9px] uppercase tracking-wider hover:bg-slate-700"
@@ -207,7 +213,7 @@ export default function PathologyDashboardPage() {
                               <button
                                 onClick={() =>
                                   router.push(
-                                    `/forms/pathology?caseId=${c.caseInfo?.caseNumber}`
+                                    `/forms/pathology?caseId=${c.caseInfo?.caseNumber}`,
                                   )
                                 }
                                 className="px-2 py-1 bg-slate-800 text-white text-[9px] uppercase tracking-wider hover:bg-slate-700"
@@ -249,7 +255,7 @@ export default function PathologyDashboardPage() {
                             <button
                               onClick={() =>
                                 router.push(
-                                  `/forms/pathology?caseId=${req.caseId}&doc=${req.doc}`
+                                  `/forms/pathology?caseId=${req.caseId}&doc=${req.doc}`,
                                 )
                               }
                               className="px-2 py-1 bg-slate-800 text-white text-[9px] uppercase tracking-wider hover:bg-slate-700"
