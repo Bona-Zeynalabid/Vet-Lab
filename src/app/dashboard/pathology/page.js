@@ -82,9 +82,20 @@ export default function PathologyDashboardPage() {
       ? pendingItems
       : completedCases.map((c) => ({ type: "case", data: c }));
 
+  // Helper component to show a field only if it has a value
+  const Field = ({ label, value }) => {
+    if (value === null || value === undefined || value === "") return null;
+    return (
+      <div>
+        <span className="text-slate-500">{label}:</span>{" "}
+        <span className="font-semibold">{value}</span>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
-      {/* Header – no + New button */}
+      {/* Header */}
       <div className="border-b-2 border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
         <div>
           <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500 block">
@@ -274,7 +285,7 @@ export default function PathologyDashboardPage() {
         )}
       </div>
 
-      {/* Modal (same detailed view, link adjusted) */}
+      {/* Modal with FULL DETAILS */}
       {showModal && selectedCase && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4">
@@ -300,9 +311,92 @@ export default function PathologyDashboardPage() {
                 </button>
               </div>
 
-              <div className="p-4 space-y-4">
-                {/* Patient & Owner info – same as bacteriology modal */}
-                {/* ... (same as bacteriology modal) ... */}
+              <div className="p-4 space-y-4 font-mono text-xs">
+                {/* Patient & Owner */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-slate-300 p-3 space-y-2 bg-slate-50">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">
+                      Patient Profile
+                    </h3>
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
+                      <Field label="Species" value={selectedCase.patient?.species} />
+                      <Field label="Breed" value={selectedCase.patient?.breed} />
+                      <Field label="Sex" value={selectedCase.patient?.sex} />
+                      <Field label="Age" value={selectedCase.patient?.age} />
+                      <Field label="Weight" value={selectedCase.patient?.weight ? `${selectedCase.patient.weight} KG` : null} />
+                      <Field label="Animal ID" value={selectedCase.patient?.animalId} />
+                      <Field label="Number of Animals" value={selectedCase.patient?.numberOfAnimals} />
+                    </div>
+                  </div>
+                  <div className="border border-slate-300 p-3 space-y-2 bg-slate-50">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">
+                      Owner & Intake History
+                    </h3>
+                    <div className="text-[10px] space-y-1">
+                      <Field label="Owner Name" value={selectedCase.owner?.fullName} />
+                      <Field label="Telephone" value={selectedCase.owner?.telephone} />
+                      <Field label="Address" value={selectedCase.owner?.address} />
+                      <Field label="Chief Complaint" value={selectedCase.anamnesis?.primaryComplaint} />
+                      <Field label="History" value={selectedCase.anamnesis?.history} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Physical Exam */}
+                <div className="border border-slate-300 p-3 bg-white space-y-2">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300 pb-1">
+                    Physical Exam & Vital Signs
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
+                    <Field label="Temp" value={selectedCase.physicalExam?.temperature ? `${selectedCase.physicalExam.temperature}°C` : null} />
+                    <Field label="Demeanor" value={selectedCase.physicalExam?.demeanor} />
+                    <Field label="BCS" value={selectedCase.physicalExam?.bcs} />
+                    <Field label="Mucous Memb" value={selectedCase.physicalExam?.mucousMembrane} />
+                    <Field label="Resp Rate" value={selectedCase.physicalExam?.respiratoryRate} />
+                    <Field label="CRT" value={selectedCase.physicalExam?.crt} />
+                    <Field label="Pulse" value={selectedCase.physicalExam?.pulseRate} />
+                    <Field label="Heart Sound" value={selectedCase.physicalExam?.heartSound} />
+                    <Field label="GI Motility" value={selectedCase.physicalExam?.giMotility} />
+                    <Field label="Lung Sound" value={selectedCase.physicalExam?.lungSound} />
+                    <Field label="Other Findings" value={selectedCase.physicalExam?.otherFindings} />
+                  </div>
+                </div>
+
+                {/* Lab Directives */}
+                <div className="border-2 border-slate-800 p-4 space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 border-b-2 border-slate-800 pb-2">
+                    Lab Directives from Case
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {["blood", "urine", "feces", "nasal", "rumen"].map((type) => {
+                      const tests = selectedCase.labDirectives?.[type]?.tests;
+                      const notes = selectedCase.labDirectives?.[type]?.notes;
+                      return (
+                        <div key={type} className="border border-slate-300 p-3">
+                          <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-800 bg-slate-100 px-2 py-1 mb-2">
+                            {type} Tests
+                          </h4>
+                          {tests?.length > 0 ? (
+                            <ul className="space-y-0.5">
+                              {tests.map((test, i) => (
+                                <li key={i} className="text-[10px] font-mono text-slate-700 flex items-start gap-1">
+                                  <span className="text-slate-400 mt-0.5">▪</span> {test}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-[10px] font-mono text-slate-400 italic">None specified</p>
+                          )}
+                          {notes && (
+                            <p className="text-[10px] font-mono text-slate-500 mt-1 border-t border-slate-200 pt-1">
+                              Note: {notes}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
                 {/* Action buttons */}
                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
