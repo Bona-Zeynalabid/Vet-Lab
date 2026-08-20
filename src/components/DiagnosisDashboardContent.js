@@ -289,7 +289,7 @@ export default function DiagnosisDashboardContent({ docType }) {
               Diagnosis Dashboard ({selectedDoc})
             </h1>
           </div>
-          <button onClick={() => router.push("/dashboard")} className="px-4 py-2 bg-slate-900 text-white text-[10px] font-mono uppercase tracking-widest font-bold hover:bg-black transition-colors">
+          <button onClick={() => router.push("/dashboard/rooms")} className="px-4 py-2 bg-slate-900 text-white text-[10px] font-mono uppercase tracking-widest font-bold hover:bg-black transition-colors">
             Back to Dashboard
           </button>
         </header>

@@ -95,7 +95,7 @@ export default function CaseRegistrationPage() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/dashboard/rooms")}
             className="px-4 py-2 border border-slate-400 text-slate-700 text-[10px] font-mono uppercase tracking-widest font-bold hover:bg-slate-100 transition-colors"
           >
             Back to Dashboard

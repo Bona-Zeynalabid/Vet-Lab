@@ -312,7 +312,7 @@ export default function PharmacyPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className={labelStyle}>
-                      Quantity Dispensed <span className="text-red-600">*</span>
+                     Amount in ml/mg<span className="text-red-600">*</span>
                     </label>
                     <input
                       type="text"
