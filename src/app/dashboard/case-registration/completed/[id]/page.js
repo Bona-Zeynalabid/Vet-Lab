@@ -308,8 +308,6 @@ export default function CompletedCaseDetailPage() {
           <div className="flex items-end gap-x-4 mt-10">
             <span>Name of Veterinarian in Charge</span>
             <div className="flex-1 border-b border-black px-2">{veterinarian_name}</div>
-            <span>Signature</span>
-            <div className="flex-1 border-b border-black px-2">{veterinarian_signature}</div>
           </div>
         </div>
       </div>
