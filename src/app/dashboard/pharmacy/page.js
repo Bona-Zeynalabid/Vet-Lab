@@ -938,7 +938,7 @@ export default function PharmacyDashboardPage() {
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Price (ETB)</label>
+                    <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Price per Amount (ETB)</label>
                     <input
                       type="number"
                       step="0.01"
