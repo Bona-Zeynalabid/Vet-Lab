@@ -51,7 +51,7 @@ export default function AdminSettingsPage() {
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [actionLoading, setActionLoading] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [actionStatus, setActionStatus] = useState(null);
 
   useEffect(() => {
@@ -71,24 +71,64 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const handleClearAction = async (target) => {
+  const collections = [
+    "bacteriology_reports",
+    "bacteriology_requests",
+    "veterinary_cases",
+    "diagnoses",
+    "lab_requests",
+    "parasitology_reports",
+    "parasitology_requests",
+    "pathology_reports",
+    "pathology_requests",
+    "pharmacy_records",
+  ];
+
+  const handleClearAll = async () => {
     if (
       !confirm(
-        `Are you sure you want to clear all data from "${target}"? This action cannot be undone.`
+        `⚠️ ARE YOU SURE?\n\nThis will permanently delete ALL data from the following collections:\n\n${collections.join("\n")}\n\nThis action cannot be undone.`
       )
     ) {
       return;
     }
-    setActionLoading(target);
+
+    setActionLoading(true);
     setActionStatus(null);
+
     try {
-      const result = await adminApi.clear(target);
-      setActionStatus({ type: "success", message: result.message });
+      const results = await Promise.all(
+        collections.map(async (target) => {
+          try {
+            const res = await adminApi.clear(target);
+            return { target, success: true, message: res.message };
+          } catch (err) {
+            return { target, success: false, message: err.message };
+          }
+        })
+      );
+
+      const successes = results.filter((r) => r.success);
+      const failures = results.filter((r) => !r.success);
+
+      if (failures.length === 0) {
+        setActionStatus({
+          type: "success",
+          message: `✅ All ${successes.length} collections cleared successfully.`,
+        });
+      } else {
+        setActionStatus({
+          type: "error",
+          message: `⚠️ Cleared ${successes.length} collections, but ${failures.length} failed. Check console for details.`,
+        });
+        console.error("Clear failures:", failures);
+      }
+
       await fetchHealth();
     } catch (err) {
-      setActionStatus({ type: "error", message: err.message });
+      setActionStatus({ type: "error", message: `❌ ${err.message}` });
     } finally {
-      setActionLoading(null);
+      setActionLoading(false);
     }
   };
 
@@ -119,19 +159,6 @@ export default function AdminSettingsPage() {
       </div>
     );
   }
-
-  const collections = [
-    "bacteriology_reports",
-    "bacteriology_requests",
-    "veterinary_cases",
-    "diagnoses",
-    "lab_requests",
-    "parasitology_reports",
-    "parasitology_requests",
-    "pathology_reports",
-    "pathology_requests",
-    "pharmacy_records",
-  ];
 
   return (
     <div className="space-y-6 font-sans text-slate-900 max-w-7xl mx-auto p-4 sm:p-6">
@@ -277,11 +304,10 @@ export default function AdminSettingsPage() {
               <div
                 className="h-full bg-slate-800 rounded-full"
                 style={{
-                  width: `${
-                    (parseFloat(health?.mongodb?.usedSpace || "0") /
-                      parseFloat(health?.mongodb?.totalSpace || "1")) *
-                    100
-                  }%`,
+                  width: `${(
+                    parseFloat(health?.mongodb?.usedSpace || "0") /
+                    parseFloat(health?.mongodb?.totalSpace || "1")
+                  ) * 100}%`,
                 }}
               />
             </div>
@@ -297,11 +323,10 @@ export default function AdminSettingsPage() {
               <div
                 className="h-full bg-slate-800 rounded-full"
                 style={{
-                  width: `${
-                    (parseFloat(health?.supabase?.usedSpace || "0") /
-                      parseFloat(health?.supabase?.totalSpace || "1")) *
-                    100
-                  }%`,
+                  width: `${(
+                    parseFloat(health?.supabase?.usedSpace || "0") /
+                    parseFloat(health?.supabase?.totalSpace || "1")
+                  ) * 100}%`,
                 }}
               />
             </div>
@@ -310,9 +335,23 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
-        <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800 border-b border-slate-100 pb-3 mb-4">
-          Collection Management
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 mb-4">
+          <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
+            Collection Management
+          </h2>
+          <button
+            onClick={handleClearAll}
+            disabled={actionLoading}
+            className="inline-flex items-center gap-2 px-3.5 py-2 bg-rose-600 text-white text-xs font-medium rounded hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {actionLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
+            <span>{actionLoading ? "Clearing..." : "Clear All Collections"}</span>
+          </button>
+        </div>
 
         {actionStatus && (
           <div
@@ -336,26 +375,18 @@ export default function AdminSettingsPage() {
             <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 uppercase text-[10px] tracking-wider">
               <tr>
                 <th className="p-3 font-semibold">Collection Target</th>
-                <th className="p-3 text-right font-semibold">Maintenance Action</th>
+                <th className="p-3 text-right font-semibold">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {collections.map((collection) => (
                 <tr key={collection} className="hover:bg-slate-50/80 transition-colors">
                   <td className="p-3 text-slate-800">{collection}</td>
-                  <td className="p-3 text-right">
-                    <button
-                      onClick={() => handleClearAction(collection)}
-                      disabled={actionLoading === collection}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-rose-200 text-rose-700 hover:bg-rose-50 hover:border-rose-300 text-[11px] font-sans font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {actionLoading === collection ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                      )}
-                      <span>Clear Records</span>
-                    </button>
+                  <td className="p-3 text-right text-slate-400 text-[11px]">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span>Active</span>
+                    </span>
                   </td>
                 </tr>
               ))}

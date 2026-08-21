@@ -138,7 +138,6 @@ export default function AdminHomePage() {
       <div className="border-b-2 border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500">
               System Administration
             </span>
