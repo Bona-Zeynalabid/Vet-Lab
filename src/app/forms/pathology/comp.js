@@ -33,38 +33,38 @@ const chemicalFields = [
 ];
 
 const erythrocyteRows = [
-  { key: "rbc", measurand: "RBC count (10¹²/L)", ref: "5.0–7.2" },
-  { key: "hb", measurand: "Haemoglobin (g/L)", ref: "87–124" },
-  { key: "hct", measurand: "Haematocrit (L/L)", ref: "0.25–0.33" },
-  { key: "mcv", measurand: "MCV (fL)", ref: "38–51" },
-  { key: "mch", measurand: "MCH (pg)", ref: "14–19" },
-  { key: "mchc", measurand: "MCHC (g/L)", ref: "340–380" },
+  { key: "rbc", measurand: "RBC count (10¹²/L)" },
+  { key: "hb", measurand: "Haemoglobin (g/L)" },
+  { key: "hct", measurand: "Haematocrit (L/L)" },
+  { key: "mcv", measurand: "MCV (fL)" },
+  { key: "mch", measurand: "MCH (pg)" },
+  { key: "mchc", measurand: "MCHC (g/L)" },
 ];
 
 const leukocyteRows = [
-  { key: "plt", measurand: "Platelet count (10⁹/L)", ref: "252–724" },
-  { key: "wbc", measurand: "WBC count (10⁹/L)", ref: "5.9–14.0" },
-  { key: "neut", measurand: "Neutrophils (10⁹/L)", ref: "1.8–7.2" },
-  { key: "band", measurand: "Band neutrophils (10⁹/L)", ref: "0.0–0.3" },
-  { key: "lymph", measurand: "Lymphocytes (10⁹/L)", ref: "1.7–7.5" },
-  { key: "mono", measurand: "Monocytes (10⁹/L)", ref: "0.0–0.9" },
-  { key: "eos", measurand: "Eosinophils (10⁹/L)", ref: "0.0–1.3" },
-  { key: "baso", measurand: "Basophils (10⁹/L)", ref: "0.0–0.3" },
+  { key: "plt", measurand: "Platelet count (10⁹/L)" },
+  { key: "wbc", measurand: "WBC count (10⁹/L)" },
+  { key: "neut", measurand: "Neutrophils (10⁹/L)" },
+  { key: "band", measurand: "Band neutrophils (10⁹/L)" },
+  { key: "lymph", measurand: "Lymphocytes (10⁹/L)" },
+  { key: "mono", measurand: "Monocytes (10⁹/L)" },
+  { key: "eos", measurand: "Eosinophils (10⁹/L)" },
+  { key: "baso", measurand: "Basophils (10⁹/L)" },
 ];
 
 const plasmaProteinRows = [
-  { key: "tp", measurand: "Total Protein (g/L)", ref: "60–80" },
-  { key: "alb", measurand: "Albumin (g/L)", ref: "27–38" },
-  { key: "glob", measurand: "Globulin (g/L)", ref: "27–46" },
-  { key: "ag_ratio", measurand: "A:G Ratio", ref: "0.6–1.1" },
-  { key: "fib", measurand: "Fibrinogen (g/L)", ref: "1.0–4.0" },
+  { key: "tp", measurand: "Total Protein (g/L)" },
+  { key: "alb", measurand: "Albumin (g/L)" },
+  { key: "glob", measurand: "Globulin (g/L)" },
+  { key: "ag_ratio", measurand: "A:G Ratio" },
+  { key: "fib", measurand: "Fibrinogen (g/L)" },
 ];
 
 export default function PathologyPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const caseIdFromUrl = searchParams.get("caseId") || "";
-  const docFromUrl = searchParams.get("doc") || "";           // from lab request
+  const docFromUrl = searchParams.get("doc") || "";
 
   const [currentStep, setCurrentStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
@@ -106,7 +106,7 @@ export default function PathologyPage() {
     leukocytes: {},
     plasmaProteins: {},
     pathologistNotes: "",
-    doc: docFromUrl,               // pre‑filled from request
+    doc: docFromUrl,
     pathologist: "",
     dateCompleted: "",
   });
@@ -118,11 +118,11 @@ export default function PathologyPage() {
   }, [caseIdFromUrl]);
 
   useEffect(() => {
-  const name = getLoggedInUserName();
-  if (name) {
-    setFormData(prev => ({ ...prev, pathologist: name }));
-  }
-}, []);
+    const name = getLoggedInUserName();
+    if (name) {
+      setFormData(prev => ({ ...prev, pathologist: name }));
+    }
+  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -206,84 +206,123 @@ export default function PathologyPage() {
   };
 
   const buildPayload = () => {
-    const cmt = {
-      rightFront: formData.cmt.rf,
-      rightHind: formData.cmt.rh,
-      leftFront: formData.cmt.lf,
-      leftHind: formData.cmt.lh,
-    };
-
-    const semenAbnormalities = {};
-    spermDefects.forEach((defect) => {
-      const key = defect.toLowerCase().replace(/\s+/g, "");
-      semenAbnormalities[key] = formData.spermDefects[defect] ? Number(formData.spermDefects[defect]) : 0;
-    });
-
-    const erythrocytes = {};
-    erythrocyteRows.forEach((row) => {
-      erythrocytes[row.key] = formData.erythrocytes[row.key] ? Number(formData.erythrocytes[row.key]) : null;
-    });
-
-    const leukocytes = {};
-    leukocyteRows.forEach((row) => {
-      leukocytes[row.key] = formData.leukocytes[row.key] ? Number(formData.leukocytes[row.key]) : null;
-    });
-
-    const plasmaProteins = {};
-    plasmaProteinRows.forEach((row) => {
-      plasmaProteins[row.key] = formData.plasmaProteins[row.key] ? Number(formData.plasmaProteins[row.key]) : null;
-    });
-
-    return {
+    const payload = {
       caseId: formData.caseNumber,
       doc: formData.doc,
-      date: formData.dateReceived,   // matches the pathology model's 'date' field
-      milkExamination: {
-        cmt,
-        somaticCellCount: formData.scc,
-        electricalConductivity: formData.electricalConductivity ? Number(formData.electricalConductivity) : null,
-        milkPh: formData.milkPh ? Number(formData.milkPh) : null,
-        bacterialCulture: formData.bacterialCulture,
-        antibioticResidue: formData.antibioticResidue || undefined,
-        appearance: formData.milkAppearance,
-      },
-      semenAnalysis: {
-        volume: formData.semenVolume ? Number(formData.semenVolume) : null,
-        color: formData.semenColor,
-        consistency: formData.semenConsistency,
-        ph: formData.semenPh ? Number(formData.semenPh) : null,
-        massMotility: formData.massMotility,
-        individualMotility: formData.individualMotilityPct ? Number(formData.individualMotilityPct) : null,
-        individualMotilityGrade: formData.individualMotilityGrade,
-        morphology: {
-          normalPercentage: formData.normalSpermPct ? Number(formData.normalSpermPct) : null,
-          abnormalities: semenAbnormalities,
-        },
-        catalaseTest: formData.catalaseTest || undefined,
-        vesicularNeurosis: formData.vesicularNeurosis || undefined,
-        liveDeadRatio: formData.liveDeadRatio,
-        spermConcentration: formData.spermConcentration ? Number(formData.spermConcentration) : null,
-      },
-      urinalysis: {
-        appearance: formData.urineAppearance,
-        color: formData.urineColor,
-        specificGravity: formData.specificGravity ? Number(formData.specificGravity) : null,
-        ph: formData.urineChemical?.ph ? Number(formData.urineChemical.ph) : null,
-        protein: formData.urineChemical?.protein || "",
-        glucose: formData.urineChemical?.glucose || "",
-        ketones: formData.urineChemical?.ketones || "",
-        blood: formData.urineChemical?.blood || "",
-        bilirubin: formData.urineChemical?.bilirubin || "",
-        microscopicFindings: formData.urineMicroscopic,
-      },
-      hematology: {
-        erythrocytes,
-        leukocytes,
-        plasmaProteins,
-      },
-      technician: formData.pathologist,
-      dateCompleted: formData.dateCompleted || undefined,
+      date: formData.dateReceived,
     };
+
+    // Milk Examination
+    const milk = {};
+    const cmtMapped = {};
+    if (formData.cmt.rf) cmtMapped.rightFront = formData.cmt.rf;
+    if (formData.cmt.rh) cmtMapped.rightHind = formData.cmt.rh;
+    if (formData.cmt.lf) cmtMapped.leftFront = formData.cmt.lf;
+    if (formData.cmt.lh) cmtMapped.leftHind = formData.cmt.lh;
+    if (Object.keys(cmtMapped).length > 0) milk.cmt = cmtMapped;
+
+    if (formData.scc && formData.scc.trim() !== "") milk.somaticCellCount = formData.scc;
+    if (formData.electricalConductivity && formData.electricalConductivity !== "") milk.electricalConductivity = Number(formData.electricalConductivity);
+    if (formData.milkPh && formData.milkPh !== "") milk.milkPh = Number(formData.milkPh);
+    if (formData.bacterialCulture && formData.bacterialCulture.trim() !== "") milk.bacterialCulture = formData.bacterialCulture;
+    if (formData.antibioticResidue && formData.antibioticResidue !== "") milk.antibioticResidue = formData.antibioticResidue;
+    if (formData.milkAppearance && formData.milkAppearance !== "") milk.appearance = formData.milkAppearance;
+
+    if (Object.keys(milk).length > 0) payload.milkExamination = milk;
+
+    // Semen Analysis
+    const semen = {};
+    if (formData.semenVolume && formData.semenVolume !== "") semen.volume = Number(formData.semenVolume);
+    if (formData.semenColor && formData.semenColor !== "") semen.color = formData.semenColor;
+    if (formData.semenConsistency && formData.semenConsistency !== "") semen.consistency = formData.semenConsistency;
+    if (formData.semenPh && formData.semenPh !== "") semen.ph = Number(formData.semenPh);
+    if (formData.massMotility && formData.massMotility !== "") semen.massMotility = formData.massMotility;
+    if (formData.individualMotilityPct && formData.individualMotilityPct !== "") semen.individualMotility = Number(formData.individualMotilityPct);
+    if (formData.individualMotilityGrade && formData.individualMotilityGrade !== "") semen.individualMotilityGrade = formData.individualMotilityGrade;
+
+    const morph = {};
+    if (formData.normalSpermPct && formData.normalSpermPct !== "") morph.normalPercentage = Number(formData.normalSpermPct);
+
+    const defects = {};
+    spermDefects.forEach(defect => {
+      const val = formData.spermDefects[defect];
+      if (val && val !== "") {
+        const key = defect.toLowerCase().replace(/\s+/g, "");
+        defects[key] = Number(val);
+      }
+    });
+    if (Object.keys(defects).length > 0) morph.abnormalities = defects;
+    if (Object.keys(morph).length > 0) semen.morphology = morph;
+
+    if (formData.catalaseTest && formData.catalaseTest !== "") semen.catalaseTest = formData.catalaseTest;
+    if (formData.vesicularNeurosis && formData.vesicularNeurosis !== "") semen.vesicularNeurosis = formData.vesicularNeurosis;
+    if (formData.liveDeadRatio && formData.liveDeadRatio.trim() !== "") semen.liveDeadRatio = formData.liveDeadRatio;
+    if (formData.spermConcentration && formData.spermConcentration !== "") semen.spermConcentration = Number(formData.spermConcentration);
+
+    if (Object.keys(semen).length > 0) payload.semenAnalysis = semen;
+
+    // Urinalysis
+    const urine = {};
+    if (formData.urineAppearance && formData.urineAppearance !== "") urine.appearance = formData.urineAppearance;
+    if (formData.urineColor && formData.urineColor !== "") urine.color = formData.urineColor;
+    if (formData.specificGravity && formData.specificGravity !== "") urine.specificGravity = Number(formData.specificGravity);
+
+    const chem = {};
+    let hasChem = false;
+    chemicalFields.forEach(f => {
+      const val = formData.urineChemical[f.key];
+      if (val && val.toString().trim() !== "") {
+        chem[f.key] = f.type === "number" ? Number(val) : val;
+        hasChem = true;
+      }
+    });
+    if (hasChem) {
+      urine.ph = chem.ph || null;
+      urine.protein = chem.protein || "";
+      urine.glucose = chem.glucose || "";
+      urine.ketones = chem.ketones || "";
+      urine.blood = chem.blood || "";
+      urine.bilirubin = chem.bilirubin || "";
+    }
+
+    if (formData.urineMicroscopic && formData.urineMicroscopic.trim() !== "") urine.microscopicFindings = formData.urineMicroscopic;
+
+    if (Object.keys(urine).length > 0) payload.urinalysis = urine;
+
+    // Hematology
+    const hema = {};
+
+    const erys = {};
+    erythrocyteRows.forEach(row => {
+      const val = formData.erythrocytes[row.key];
+      if (val && val !== "") erys[row.key] = Number(val);
+    });
+    if (Object.keys(erys).length > 0) hema.erythrocytes = erys;
+
+    const leuk = {};
+    leukocyteRows.forEach(row => {
+      const val = formData.leukocytes[row.key];
+      if (val && val !== "") leuk[row.key] = Number(val);
+    });
+    if (Object.keys(leuk).length > 0) hema.leukocytes = leuk;
+
+    const prot = {};
+    plasmaProteinRows.forEach(row => {
+      const val = formData.plasmaProteins[row.key];
+      if (val && val !== "") prot[row.key] = Number(val);
+    });
+    if (Object.keys(prot).length > 0) hema.plasmaProteins = prot;
+
+    if (Object.keys(hema).length > 0) payload.hematology = hema;
+
+    if (formData.pathologistNotes && formData.pathologistNotes.trim() !== "") {
+      payload.notes = formData.pathologistNotes;
+    }
+
+    if (formData.technician) payload.technician = formData.technician;
+    if (formData.dateCompleted) payload.dateCompleted = formData.dateCompleted;
+
+    return payload;
   };
 
   const handleSubmit = async (e) => {
@@ -298,14 +337,12 @@ export default function PathologyPage() {
       const payload = buildPayload();
 
       if (docFromUrl) {
-        // Save to PathologyRequest collection and update LabRequest status
         const newRequestResult = await pathoreqApi.create({
           ...payload,
           status: "completed",
         });
         setSavedRecord(newRequestResult);
 
-        // Mark the original LabRequest (unified) as completed
         const labReq = await labRequestApi.list({
           caseId: formData.caseNumber,
           lab: "pathology",
@@ -315,7 +352,6 @@ export default function PathologyPage() {
           await labRequestApi.update(labReq[0]._id, { status: "completed" });
         }
       } else {
-        // Normal case assignment – save to Pathology collection
         const res = await pathologyApi.create(payload);
         setSavedRecord(res);
       }
@@ -478,14 +514,13 @@ export default function PathologyPage() {
                 <div className="space-y-2">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 block">Erythrocyte Parameters</span>
                   <div className="border border-slate-300 overflow-x-auto">
-                    <table className="w-full text-left text-xs font-mono min-w-[500px]">
-                      <thead className="bg-slate-800 text-white uppercase text-[10px] tracking-wider"><tr><th className="p-2.5">Measurand (Units)</th><th className="p-2.5">Result Value</th><th className="p-2.5">Reference Interval</th></tr></thead>
+                    <table className="w-full text-left text-xs font-mono min-w-[400px]">
+                      <thead className="bg-slate-800 text-white uppercase text-[10px] tracking-wider"><tr><th className="p-2.5">Measurand (Units)</th><th className="p-2.5">Result Value</th></tr></thead>
                       <tbody className="divide-y divide-slate-200 bg-slate-50">
                         {erythrocyteRows.map((row) => (
                           <tr key={row.key} className="hover:bg-slate-100">
                             <td className="p-2 font-semibold text-slate-700">{row.measurand}</td>
                             <td className="p-2"><input type="text" value={formData.erythrocytes[row.key] || ""} onChange={(e) => handleNestedChange("erythrocytes", row.key, e.target.value)} className="w-full bg-white border border-slate-300 p-1 text-xs focus:outline-none focus:border-slate-800" /></td>
-                            <td className="p-2 text-slate-500">{row.ref}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -495,14 +530,13 @@ export default function PathologyPage() {
                 <div className="space-y-2">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 block">Leukocyte & Platelet Parameters</span>
                   <div className="border border-slate-300 overflow-x-auto">
-                    <table className="w-full text-left text-xs font-mono min-w-[500px]">
-                      <thead className="bg-slate-800 text-white uppercase text-[10px] tracking-wider"><tr><th className="p-2.5">Measurand (Units)</th><th className="p-2.5">Result Value</th><th className="p-2.5">Reference Interval</th></tr></thead>
+                    <table className="w-full text-left text-xs font-mono min-w-[400px]">
+                      <thead className="bg-slate-800 text-white uppercase text-[10px] tracking-wider"><tr><th className="p-2.5">Measurand (Units)</th><th className="p-2.5">Result Value</th></tr></thead>
                       <tbody className="divide-y divide-slate-200 bg-slate-50">
                         {leukocyteRows.map((row) => (
                           <tr key={row.key} className="hover:bg-slate-100">
                             <td className="p-2 font-semibold text-slate-700">{row.measurand}</td>
                             <td className="p-2"><input type="text" value={formData.leukocytes[row.key] || ""} onChange={(e) => handleNestedChange("leukocytes", row.key, e.target.value)} className="w-full bg-white border border-slate-300 p-1 text-xs focus:outline-none focus:border-slate-800" /></td>
-                            <td className="p-2 text-slate-500">{row.ref}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -512,14 +546,13 @@ export default function PathologyPage() {
                 <div className="space-y-2">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 block">Plasma Proteins & Indices</span>
                   <div className="border border-slate-300 overflow-x-auto">
-                    <table className="w-full text-left text-xs font-mono min-w-[500px]">
-                      <thead className="bg-slate-800 text-white uppercase text-[10px] tracking-wider"><tr><th className="p-2.5">Measurand (Units)</th><th className="p-2.5">Result Value</th><th className="p-2.5">Reference Interval</th></tr></thead>
+                    <table className="w-full text-left text-xs font-mono min-w-[400px]">
+                      <thead className="bg-slate-800 text-white uppercase text-[10px] tracking-wider"><tr><th className="p-2.5">Measurand (Units)</th><th className="p-2.5">Result Value</th></tr></thead>
                       <tbody className="divide-y divide-slate-200 bg-slate-50">
                         {plasmaProteinRows.map((row) => (
                           <tr key={row.key} className="hover:bg-slate-100">
                             <td className="p-2 font-semibold text-slate-700">{row.measurand}</td>
                             <td className="p-2"><input type="text" value={formData.plasmaProteins[row.key] || ""} onChange={(e) => handleNestedChange("plasmaProteins", row.key, e.target.value)} className="w-full bg-white border border-slate-300 p-1 text-xs focus:outline-none focus:border-slate-800" /></td>
-                            <td className="p-2 text-slate-500">{row.ref}</td>
                           </tr>
                         ))}
                       </tbody>
