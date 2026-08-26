@@ -100,9 +100,11 @@ export default function DoctorDiagnosisPage() {
       case 1:
         return formData.caseNumber.trim() !== "" && formData.date.trim() !== "" && formData.attendingVet.trim() !== "";
       case 2:
-        return formData.primaryTentative.trim() !== "";
+        // Tentative and Definitive diagnoses are now optional – always valid
+        return true;
       case 3:
-        return formData.definitiveDiagnosis.trim() !== "";
+        // Prescriptions are optional – always valid
+        return true;
       default:
         return true;
     }
@@ -127,19 +129,19 @@ export default function DoctorDiagnosisPage() {
     date: formData.date,
     veterinarian: { name: formData.attendingVet, licenseNumber: "" },
     tentativeDiagnosis: {
-      primary: formData.primaryTentative,
+      primary: formData.primaryTentative || "",
       differentials: formData.differentialDiagnoses ? formData.differentialDiagnoses.split("\n").filter(Boolean) : [],
-      clinicalJustification: formData.clinicalJustification,
+      clinicalJustification: formData.clinicalJustification || "",
     },
     definitiveDiagnosis: {
-      finalDiagnosis: formData.definitiveDiagnosis,
-      confirmedBy: formData.confirmationMethods,
-      diagnosticNotes: formData.diagnosticNotes,
+      finalDiagnosis: formData.definitiveDiagnosis || "",
+      confirmedBy: formData.confirmationMethods || [],
+      diagnosticNotes: formData.diagnosticNotes || "",
     },
     prognosis: formData.prognosis || "fair",
     followUp: {
       date: formData.followUpDate || undefined,
-      instructions: formData.followUpInstructions,
+      instructions: formData.followUpInstructions || "",
     },
     status: "finalized",
   });
@@ -233,15 +235,24 @@ export default function DoctorDiagnosisPage() {
             {currentStep === 2 && (
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2"><h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">Stage 2: Tentative & Definitive Diagnosis</h3></div>
-                <div><label className={labelStyle}>Primary Tentative Diagnosis <span className="text-red-600">*</span></label><input type="text" required placeholder="e.g. Bacterial Bronchopneumonia" value={formData.primaryTentative} onChange={(e) => handleInputChange("primaryTentative", e.target.value)} className={inputStyle} /></div>
-                <div><label className={labelStyle}>Differential Diagnoses</label><textarea rows={3} placeholder="One per line..." value={formData.differentialDiagnoses} onChange={(e) => handleInputChange("differentialDiagnoses", e.target.value)} className={inputStyle} /></div>
-                <div><label className={labelStyle}>Clinical Justification</label><textarea rows={2} placeholder="Supporting findings..." value={formData.clinicalJustification} onChange={(e) => handleInputChange("clinicalJustification", e.target.value)} className={inputStyle} /></div>
+                <div>
+                  <label className={labelStyle}>Primary Tentative Diagnosis <span className="text-slate-400 font-normal"></span></label>
+                  <input type="text" placeholder="e.g. Bacterial Bronchopneumonia" value={formData.primaryTentative} onChange={(e) => handleInputChange("primaryTentative", e.target.value)} className={inputStyle} />
+                </div>
+                <div>
+                  <label className={labelStyle}>Differential Diagnoses <span className="text-slate-400 font-normal"></span></label>
+                  <textarea rows={3} placeholder="One per line..." value={formData.differentialDiagnoses} onChange={(e) => handleInputChange("differentialDiagnoses", e.target.value)} className={inputStyle} />
+                </div>
+                <div>
+                  <label className={labelStyle}>Clinical Justification <span className="text-slate-400 font-normal"></span></label>
+                  <textarea rows={2} placeholder="Supporting findings..." value={formData.clinicalJustification} onChange={(e) => handleInputChange("clinicalJustification", e.target.value)} className={inputStyle} />
+                </div>
                 <div className="border-t border-slate-200 pt-4">
-                  <label className={labelStyle}>Definitive Diagnosis <span className="text-red-600">*</span></label>
-                  <input type="text" required placeholder="e.g. Pasteurella multocida Bronchopneumonia" value={formData.definitiveDiagnosis} onChange={(e) => handleInputChange("definitiveDiagnosis", e.target.value)} className={inputStyle} />
+                  <label className={labelStyle}>Definitive Diagnosis <span className="text-slate-400 font-normal"></span></label>
+                  <input type="text" placeholder="e.g. Pasteurella multocida Bronchopneumonia" value={formData.definitiveDiagnosis} onChange={(e) => handleInputChange("definitiveDiagnosis", e.target.value)} className={inputStyle} />
                 </div>
                 <fieldset className="border border-slate-300 p-3 space-y-2">
-                  <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">Confirmation Methods</legend>
+                  <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">Confirmation Methods <span className="font-normal text-slate-400"></span></legend>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {confirmationMethods.map((method) => (
                       <label key={method} className="flex items-center space-x-2 text-xs cursor-pointer">
@@ -251,7 +262,10 @@ export default function DoctorDiagnosisPage() {
                     ))}
                   </div>
                 </fieldset>
-                <div><label className={labelStyle}>Diagnostic Notes</label><textarea rows={2} placeholder="Lab verification parameters..." value={formData.diagnosticNotes} onChange={(e) => handleInputChange("diagnosticNotes", e.target.value)} className={inputStyle} /></div>
+                <div>
+                  <label className={labelStyle}>Diagnostic Notes <span className="text-slate-400 font-normal"></span></label>
+                  <textarea rows={2} placeholder="Lab verification parameters..." value={formData.diagnosticNotes} onChange={(e) => handleInputChange("diagnosticNotes", e.target.value)} className={inputStyle} />
+                </div>
               </div>
             )}
 
