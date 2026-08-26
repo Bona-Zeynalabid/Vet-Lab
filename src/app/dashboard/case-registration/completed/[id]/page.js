@@ -161,48 +161,48 @@ export default function CompletedCaseDetailPage() {
 
           {/* Patient & Owner Info */}
           <div className="flex flex-wrap items-end gap-x-4 mb-3">
-            <span>Date</span>
+            <span>Date:</span>
             <div className="flex-1 border-b border-black min-w-[80px] px-2">
               {date ? new Date(date).toLocaleDateString() : ""}
             </div>
-            <span>Case No.</span>
+            <span>Case No.:</span>
             <div className="flex-1 border-b border-black min-w-[100px] px-2">
               {case_no}
             </div>
           </div>
 
           <div className="flex flex-wrap items-end gap-x-4 mb-3">
-            <span>Owner's Name</span>
+            <span>Owner's Name:</span>
             <div className="flex-1 border-b border-black min-w-[150px] px-2">
               {owner_name}
             </div>
-            <span>Address</span>
+            <span>Address:</span>
             <div className="flex-1 border-b border-black min-w-[150px] px-2">
               {address}
             </div>
-            <span>Tel. No.</span>
+            <span>Tel. No.:</span>
             <div className="flex-1 border-b border-black min-w-[80px] px-2">
               {tel_no}
             </div>
           </div>
 
           <div className="flex flex-wrap items-end gap-x-4 mb-3">
-            <span>Species</span>
+            <span>Species:</span>
             <div className="flex-1 border-b border-black px-2">{species}</div>
-            <span>No. of Animals</span>
+            <span>No. of Animals:</span>
             <div className="flex-1 border-b border-black px-2">{no_of_animals}</div>
             <span>Breed</span>
             <div className="flex-1 border-b border-black px-2">{breed}</div>
-            <span>Animal ID</span>
+            <span>Animal ID:</span>
             <div className="flex-1 border-b border-black px-2">{animal_id}</div>
           </div>
 
           <div className="flex flex-wrap items-end gap-x-4 mb-4">
-            <span>Sex</span>
+            <span>Sex:</span>
             <div className="flex-1 border-b border-black px-2">{sex}</div>
-            <span>Age</span>
+            <span>Age:</span>
             <div className="flex-1 border-b border-black px-2">{age}</div>
-            <span>Body Weight</span>
+            <span>Body Weight:</span>
             <div className="flex-1 border-b border-black px-2">{body_weight}</div>
           </div>
 
@@ -229,42 +229,42 @@ export default function CompletedCaseDetailPage() {
               <div className="flex-1 border-b border-black px-2">{bcs}</div>
             </div>
             <div className="flex items-end gap-x-2">
-              <span>Mucous membrane</span>
+              <span>Mucous membrane:</span>
               <div className="flex-1 border-b border-black px-2">{mucous_membrane}</div>
             </div>
             <div className="flex items-end gap-x-2">
-              <span>Respiratory Rate (RR)</span>
+              <span>Respiratory Rate (RR):</span>
               <div className="flex-1 border-b border-black px-2">{respiratory_rate}</div>
             </div>
             <div className="flex items-end gap-x-2">
-              <span>Capillary Refill Time (CRT)</span>
+              <span>Capillary Refill Time (CRT):</span>
               <div className="flex-1 border-b border-black px-2">{crt}</div>
             </div>
             <div className="flex items-end gap-x-2">
-              <span>Pulse Rate</span>
+              <span>Pulse Rate:</span>
               <div className="flex-1 border-b border-black px-2">{pulse_rate}</div>
             </div>
             <div className="flex items-end gap-x-2">
-              <span>Heart Sound</span>
+              <span>Heart Sound:</span>
               <div className="flex-1 border-b border-black px-2">{heart_sound}</div>
             </div>
             <div className="flex items-end gap-x-2">
-              <span>Gastro intestinal Motility</span>
+              <span>Gastro intestinal Motility:</span>
               <div className="flex-1 border-b border-black px-2">{gi_motility}</div>
             </div>
             <div className="flex items-end gap-x-2">
-              <span>Lung sound</span>
+              <span>Lung sound:</span>
               <div className="flex-1 border-b border-black px-2">{lung_sound}</div>
             </div>
             <div className="flex items-end gap-x-2">
-              <span>Temp. (T<sup>0</sup>)</span>
+              <span>Temp. (T<sup>0</sup>):</span>
               <div className="flex-1 border-b border-black px-2">{temperature}</div>
             </div>
           </div>
 
           {/* Other Clinical Findings */}
           <div className="flex items-end gap-x-4 mt-5 mb-3">
-            <span>Other clinical findings</span>
+            <span>Other clinical findings:</span>
             <div className="flex-1 border-b border-black px-2">{other_clinical_findings}</div>
           </div>
 
@@ -306,9 +306,9 @@ export default function CompletedCaseDetailPage() {
 
           {/* Footer */}
           <div className="flex items-end gap-x-4 mt-10">
-            <span>Name of Veterinarian in Charge</span>
+            <span>Name of Veterinarian in Charge:</span>
             <div className="flex-1 border-b border-black px-2">{veterinarian_name}</div>
-             <span>Signature</span>
+             <span>Signature:</span>
             <div className="flex-1 border-b border-black px-2"></div>
           </div>
         </div>
