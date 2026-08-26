@@ -314,17 +314,23 @@ export default function CompletedCaseDetailPage() {
         </div>
       </div>
 
-      {/* Print styling */}
-      <style jsx>{`
-        @media print {
-          .no-print {
-            display: none;
-          }
-          body {
-            background: white;
-          }
-        }
-      `}</style>
+     {/* Print styling */}
+<style jsx>{`
+  @media print {
+    @page {
+      margin: 0; 
+      size: A4 portrait;
+    }
+
+    .no-print {
+      display: none !important;
+    }
+
+    body {
+      background: white !important;
+    }
+  }
+`}</style>
     </div>
   );
 }
