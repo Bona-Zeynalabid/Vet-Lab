@@ -96,7 +96,7 @@ export default function BacteriologyPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const caseIdFromUrl = searchParams.get("caseId") || "";
-  const docFromUrl = searchParams.get("doc") || ""; // if present, this is a lab request
+  const docFromUrl = searchParams.get("doc") || "";
 
   const [currentStep, setCurrentStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
@@ -186,16 +186,13 @@ export default function BacteriologyPage() {
   const isCurrentStepValid = () => {
     switch (currentStep) {
       case 1:
-        return (
-          formData.dateReceived.trim() !== "" &&
-          formData.sampleType.trim() !== ""
-        );
+        return formData.dateReceived.trim() !== ""; // sampleType no longer required
       case 2:
-        return formData.selectedMedia.length > 0;
+        return true; // selectedMedia is now optional
       case 3:
-        return formData.gramReaction.trim() !== "";
+        return true; // gramReaction is now optional
       case 4:
-        return formData.organismIdentified.trim() !== "";
+        return true; // organismIdentified is now optional
       case 6:
         return (
           formData.bacteriologist.trim() !== "" && formData.doc.trim() !== ""
@@ -207,7 +204,7 @@ export default function BacteriologyPage() {
 
   const handleNext = () => {
     if (!isCurrentStepValid()) {
-      setError("Mandatory fields must be completed.");
+      setError("Mandatory fields (*) must be completed.");
       return;
     }
     setError("");
@@ -309,12 +306,12 @@ export default function BacteriologyPage() {
       doc: formData.doc,
       dateReceived: formData.dateReceived,
       sample: {
-        type: formData.sampleType,
-        collectionMethod: formData.collectionMethod,
-        site: formData.sampleSite,
+        type: formData.sampleType || "",
+        collectionMethod: formData.collectionMethod || "",
+        site: formData.sampleSite || "",
       },
       cultureDetails: {
-        mediaUsed: formData.selectedMedia,
+        mediaUsed: formData.selectedMedia || [],
         incubation: {
           temperature: formData.incubationTemp || "37°C",
           atmosphere: formData.incubationAtmosphere || "aerobic",
@@ -327,24 +324,24 @@ export default function BacteriologyPage() {
         },
       },
       colonyMorphology: {
-        size: formData.colonySize,
-        shape: formData.colonyShape,
-        color: formData.colonyColor,
-        opacity: formData.colonyOpacity,
-        elevation: formData.colonyElevation,
-        margin: formData.colonyMargin,
-        consistency: formData.colonyConsistency,
-        hemolysis: formData.colonyHemolysis,
-        odor: formData.colonyOdor,
+        size: formData.colonySize || "",
+        shape: formData.colonyShape || "",
+        color: formData.colonyColor || "",
+        opacity: formData.colonyOpacity || "",
+        elevation: formData.colonyElevation || "",
+        margin: formData.colonyMargin || "",
+        consistency: formData.colonyConsistency || "",
+        hemolysis: formData.colonyHemolysis || "",
+        odor: formData.colonyOdor || "",
       },
       gramStain: {
-        gramReaction: formData.gramReaction,
-        bacterialMorphology: formData.bacterialMorphology,
-        microscopicFindings: formData.microscopicDescription,
+        gramReaction: formData.gramReaction || "",
+        bacterialMorphology: formData.bacterialMorphology || "",
+        microscopicFindings: formData.microscopicDescription || "",
       },
       biochemicalTests: biochem,
       organismIdentification: {
-        organismName: formData.organismIdentified,
+        organismName: formData.organismIdentified || "",
         confidenceLevel: formData.confidenceLevel || "tentative",
       },
       antibioticSensitivity: {
@@ -369,14 +366,12 @@ export default function BacteriologyPage() {
       const payload = buildPayload();
 
       if (docFromUrl) {
-        // This is a lab request – create a new BacteriologyRequest with full result
         const newRequestResult = await bactreqApi.create({
           ...payload,
           status: "completed",
         });
         setSavedRecord(newRequestResult);
 
-        // Also mark the original LabRequest (unified) as completed
         const labReq = await labRequestApi.list({
           caseId: formData.caseNumber,
           lab: "bacteriology",
@@ -386,7 +381,6 @@ export default function BacteriologyPage() {
           await labRequestApi.update(labReq[0]._id, { status: "completed" });
         }
       } else {
-        // Normal case assignment – save to Bacteriology collection
         const res = await bacteriologyApi.create(payload);
         setSavedRecord(res);
       }
@@ -501,9 +495,7 @@ export default function BacteriologyPage() {
                     />
                   </div>
                   <div>
-                    <label className={labelStyle}>
-                      Sample Type <span className="text-red-600">*</span>
-                    </label>
+                    <label className={labelStyle}>Sample Type</label>
                     <select
                       value={formData.sampleType}
                       onChange={(e) =>
@@ -562,7 +554,7 @@ export default function BacteriologyPage() {
                 </div>
                 <fieldset className="border border-slate-300 p-3 sm:p-4 space-y-3">
                   <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">
-                    Culture Media <span className="text-red-600">*</span>
+                    Culture Media
                   </legend>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {cultureMediaList.map((media) => (
@@ -685,9 +677,7 @@ export default function BacteriologyPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className={labelStyle}>
-                      Gram Reaction <span className="text-red-600">*</span>
-                    </label>
+                    <label className={labelStyle}>Gram Reaction</label>
                     <select
                       value={formData.gramReaction}
                       onChange={(e) =>
@@ -863,13 +853,9 @@ export default function BacteriologyPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className={labelStyle}>
-                      Organism Identified{" "}
-                      <span className="text-red-600">*</span>
-                    </label>
+                    <label className={labelStyle}>Organism Identified</label>
                     <input
                       type="text"
-                      required
                       placeholder="e.g. Staphylococcus aureus"
                       value={formData.organismIdentified}
                       onChange={(e) =>
