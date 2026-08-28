@@ -115,25 +115,12 @@ export default function VeterinaryCaseForm() {
 
   const totalSteps = 7;
 
-  // Fetch the next case number (only for new cases)
-  const fetchNextCaseNumber = async () => {
-    try {
-      const res = await fetch("/api/case/next-number");
-      const data = await res.json();
-      if (data.caseNumber) {
-        setFormData((prev) => ({ ...prev, caseNumber: data.caseNumber }));
-      }
-    } catch (err) {
-      console.error("Failed to fetch next case number:", err);
-    }
-  };
-
-  // On mount: fetch case for edit or generate new number
+  // On mount: fetch case for edit or leave caseNumber empty for new case
   useEffect(() => {
     if (editId) {
       fetchCaseForEdit(editId);
     } else {
-      fetchNextCaseNumber();
+      setFormData((prev) => ({ ...prev, caseNumber: "" }));
     }
   }, [editId]);
 
@@ -298,11 +285,6 @@ export default function VeterinaryCaseForm() {
       selectedRumenTests: [],
       rumenNotes: "",
     });
-
-    // If not editing, fetch a fresh case number
-    if (!editId) {
-      fetchNextCaseNumber();
-    }
   };
 
   const buildPayload = () => ({
@@ -501,7 +483,9 @@ export default function VeterinaryCaseForm() {
                       required
                       placeholder="e.g. 01"
                       value={formData.caseNumber}
-                      readOnly
+                      onChange={(e) =>
+                        handleInputChange("caseNumber", e.target.value)
+                      }
                       className={inputStyle}
                     />
                   </div>
