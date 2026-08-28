@@ -34,7 +34,7 @@ const BacteriologySchema = new mongoose.Schema({
     odor: { type: String, default: '' },
   },
   gramStain: {
-    gramReaction: { type: String, enum: ['gram_positive', 'gram_negative', 'gram_variable'], default: '' },
+    gramReaction: { type: String, enum: ['gram_positive', 'gram_negative', 'acid_fast'], default: '' },
     bacterialMorphology: { type: String, default: '' },
     microscopicFindings: { type: String, default: '' },
   },

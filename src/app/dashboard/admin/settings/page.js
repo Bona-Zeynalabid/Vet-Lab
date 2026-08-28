@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
+  Search,
 } from "lucide-react";
 import { adminApi } from "@/lib/api";
 
@@ -54,8 +55,15 @@ export default function AdminSettingsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionStatus, setActionStatus] = useState(null);
 
+  // Completed cases state
+  const [completedCases, setCompletedCases] = useState([]);
+  const [completedLoading, setCompletedLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(null);
+
   useEffect(() => {
     fetchHealth();
+    fetchCompletedCases();
   }, []);
 
   const fetchHealth = async () => {
@@ -69,6 +77,40 @@ export default function AdminSettingsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchCompletedCases = async (search = searchQuery) => {
+    setCompletedLoading(true);
+    try {
+      const data = await adminApi.completedCases(search);
+      setCompletedCases(data || []);
+    } catch (err) {
+      console.error("Failed to fetch completed cases:", err);
+      setCompletedCases([]);
+    } finally {
+      setCompletedLoading(false);
+    }
+  };
+
+  const handleDeleteCompletedCase = async (id, caseNumber) => {
+    if (!confirm(`Are you sure you want to permanently delete completed case #${caseNumber}? This action cannot be undone.`)) {
+      return;
+    }
+    setDeleteLoading(id);
+    try {
+      await adminApi.deleteCompletedCase(id);
+      await fetchCompletedCases(searchQuery);
+      setActionStatus({ type: "success", message: `✅ Case #${caseNumber} deleted successfully.` });
+    } catch (err) {
+      setActionStatus({ type: "error", message: `❌ ${err.message}` });
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    fetchCompletedCases(searchQuery);
   };
 
   const collections = [
@@ -334,10 +376,102 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
+      {/* Completed Cases from Supabase */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 mb-4 gap-3">
+          <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
+            Completed Cases (Supabase)
+          </h2>
+          <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:min-w-[200px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by case # or owner..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded text-xs font-mono focus:outline-none focus:ring-1 focus:ring-slate-800"
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-3 py-1.5 bg-slate-800 text-white text-xs font-medium rounded hover:bg-slate-700 transition-colors"
+            >
+              Search
+            </button>
+            <button
+              type="button"
+              onClick={() => fetchCompletedCases(searchQuery)}
+              className="p-1.5 border border-slate-300 rounded hover:bg-slate-50 transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className="w-4 h-4 text-slate-500" />
+            </button>
+          </form>
+        </div>
+
+        {completedLoading ? (
+          <div className="text-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-slate-500 mx-auto" />
+            <p className="text-xs font-mono text-slate-500 mt-2">Loading completed cases...</p>
+          </div>
+        ) : completedCases.length === 0 ? (
+          <div className="text-center py-8 text-xs font-mono text-slate-400 border border-dashed border-slate-300 rounded-md">
+            {searchQuery ? "No completed cases match your search." : "No completed cases found."}
+          </div>
+        ) : (
+          <div className="overflow-x-auto border border-slate-200 rounded-md">
+            <table className="w-full text-left text-xs font-mono">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th className="p-3 font-semibold">Case #</th>
+                  <th className="p-3 font-semibold">Owner</th>
+                  <th className="p-3 font-semibold">Species</th>
+                  <th className="p-3 font-semibold">Veterinarian</th>
+                  <th className="p-3 font-semibold">Date</th>
+                  <th className="p-3 text-right font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {completedCases.map((c) => (
+                  <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-3 font-semibold text-slate-800">{c.case_no}</td>
+                    <td className="p-3 text-slate-700">{c.owner_name || "-"}</td>
+                    <td className="p-3 text-slate-700">{c.species || "-"}</td>
+                    <td className="p-3 text-slate-700">{c.veterinarian_name || "-"}</td>
+                    <td className="p-3 text-slate-700">{c.date ? new Date(c.date).toLocaleDateString() : "-"}</td>
+                    <td className="p-3 text-right">
+                      <button
+                        onClick={() => handleDeleteCompletedCase(c.id, c.case_no)}
+                        disabled={deleteLoading === c.id}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 border border-rose-200 text-rose-700 hover:bg-rose-50 hover:border-rose-300 text-[11px] font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {deleteLoading === c.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                        <span>Delete</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {completedCases.length > 0 && (
+          <div className="mt-3 text-[11px] text-slate-500 font-mono text-right">
+            {completedCases.length} case{completedCases.length > 1 ? "s" : ""} found
+          </div>
+        )}
+      </div>
+
       <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 mb-4">
           <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
-            Collection Management
+            Collection Management (MongoDB)
           </h2>
           <button
             onClick={handleClearAll}

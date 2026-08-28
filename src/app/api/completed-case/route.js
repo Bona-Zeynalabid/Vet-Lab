@@ -12,10 +12,11 @@ import ParasitologyRequest from '@/models/ParasitologyRequest';
 import PathologyRequest from '@/models/PathologyRequest';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
+// ─── POST: archive a case ───────────────────────────────────────────────
 export async function POST(request) {
   try {
     await dbConnect();
-    const { caseId } = await request.json(); // caseId = case number string
+    const { caseId } = await request.json();
 
     if (!caseId) {
       return NextResponse.json({ error: 'caseId is required' }, { status: 400 });
@@ -141,6 +142,73 @@ export async function POST(request) {
       message: 'Case archived and deleted from MongoDB',
     });
   } catch (error) {
+    console.error('Archive error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// ─── GET: list completed cases (with optional search) ──────────────────
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || '';
+
+    let query = supabaseAdmin
+      .from('completed_cases')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (search.trim()) {
+      query = query.or(
+        `case_no.ilike.%${search}%,owner_name.ilike.%${search}%`
+      );
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Supabase GET error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
+  } catch (err) {
+    console.error('GET completed cases error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+// ─── DELETE: remove a completed case by ID ─────────────────────────────
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'id is required' }, { status: 400 });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('completed_cases')
+      .delete()
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      console.error('Supabase DELETE error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (!data || data.length === 0) {
+      return NextResponse.json({ error: 'Case not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Deleted case #${data[0].case_no}`,
+    });
+  } catch (err) {
+    console.error('DELETE completed case error:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

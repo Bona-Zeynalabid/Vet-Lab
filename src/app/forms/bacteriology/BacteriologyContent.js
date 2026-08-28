@@ -698,7 +698,7 @@ export default function BacteriologyPage() {
                       <option value="">Select</option>
                       <option value="gram_positive">Gram Positive (+)</option>
                       <option value="gram_negative">Gram Negative (-)</option>
-                      <option value="gram_variable">Gram Variable</option>
+                      <option value="acid-fast">Acid Fast</option>
                     </select>
                   </div>
                   <div>

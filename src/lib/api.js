@@ -531,4 +531,9 @@ export const adminApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ target }),
     }).then((res) => res.json()),
+  completedCases: (search = "") =>
+    fetch(`/api/completed-case?search=${encodeURIComponent(search)}`).then((res) => res.json()),
+
+  deleteCompletedCase: (id) =>
+    fetch(`/api/completed-case?id=${id}`, { method: "DELETE" }).then((res) => res.json()),  
 };

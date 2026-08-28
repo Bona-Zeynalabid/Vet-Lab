@@ -29,7 +29,7 @@ export default function ParasitologyPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const caseIdFromUrl = searchParams.get("caseId") || "";
-  const docFromUrl = searchParams.get("doc") || "";           // present if this is a lab request
+  const docFromUrl = searchParams.get("doc") || "";
 
   const [currentStep, setCurrentStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
@@ -68,11 +68,11 @@ export default function ParasitologyPage() {
   }, [caseIdFromUrl]);
 
   useEffect(() => {
-  const name = getLoggedInUserName();
-  if (name) {
-    setFormData(prev => ({ ...prev, parasitologistName: name }));
-  }
-}, []);
+    const name = getLoggedInUserName();
+    if (name) {
+      setFormData(prev => ({ ...prev, parasitologistName: name }));
+    }
+  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -95,9 +95,12 @@ export default function ParasitologyPage() {
 
   const isCurrentStepValid = () => {
     switch (currentStep) {
-      case 1: return formData.dateReceived.trim() !== "" && formData.sampleType.trim() !== "";
-      case 5: return formData.parasitologistName.trim() !== "" && formData.doc.trim() !== "";
-      default: return true;
+      case 1:
+        return formData.dateReceived.trim() !== ""; // sampleType no longer required
+      case 5:
+        return formData.parasitologistName.trim() !== "" && formData.doc.trim() !== "";
+      default:
+        return true;
     }
   };
 
@@ -129,57 +132,71 @@ export default function ParasitologyPage() {
       .filter(([, v]) => v.detected === "detected")
       .map(([name, v]) => ({ parasiteName: name, detected: v.detected, lifeStage: v.stage || "adults", quantity: v.load || "few" }));
 
-    return {
+    const payload = {
       caseId: formData.caseNumber,
       doc: formData.doc,
       dateReceived: formData.dateReceived,
-      sample: { type: formData.sampleType, collectionMethod: formData.collectionMethod, condition: formData.sampleCondition || "fresh" },
-      fecalExamination: { methodsPerformed: formData.selectedFecalMethods, consistency: formData.fecalConsistency || "formed", parasitesFound: fecalFound },
-      bloodParasiteExamination: { stainingMethod: formData.stainingMethod || "giemsa", smearType: formData.bloodSampleType || "thin_smear", parasitesFound: bloodFound },
-      ectoparasiteExamination: { examinationMethod: formData.ectoExamMethod || "microscopic", siteExamined: formData.siteExamined, parasitesFound: ectoFound },
+      sample: {
+        type: formData.sampleType || "",
+        collectionMethod: formData.collectionMethod || "",
+        condition: formData.sampleCondition || "fresh",
+      },
+      fecalExamination: {
+        methodsPerformed: formData.selectedFecalMethods,
+        consistency: formData.fecalConsistency || "formed",
+        parasitesFound: fecalFound,
+      },
+      bloodParasiteExamination: {
+        stainingMethod: formData.stainingMethod || "giemsa",
+        smearType: formData.bloodSampleType || "thin_smear",
+        parasitesFound: bloodFound,
+      },
+      ectoparasiteExamination: {
+        examinationMethod: formData.ectoExamMethod || "microscopic",
+        siteExamined: formData.siteExamined || "",
+        parasitesFound: ectoFound,
+      },
       interpretation: formData.clinicalInterpretation || "",
       parasitologist: formData.parasitologistName,
       dateCompleted: formData.dateCompleted || undefined,
     };
+    return payload;
   };
 
- const handleSubmit = async (e) => {
-  if (e) e.preventDefault();
-  if (!isCurrentStepValid()) { setError("System validation failed."); return; }
-  setError(""); setLoading(true);
-  try {
-    const payload = buildPayload();
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!isCurrentStepValid()) { setError("System validation failed."); return; }
+    setError(""); setLoading(true);
+    try {
+      const payload = buildPayload();
 
-    if (docFromUrl) {
-      // This is a lab request – create a new ParasitologyRequest with full result
-      const newRequestResult = await parareqApi.create({
-        ...payload,
-        status: "completed",
-      });
-      setSavedRecord(newRequestResult);
+      if (docFromUrl) {
+        const newRequestResult = await parareqApi.create({
+          ...payload,
+          status: "completed",
+        });
+        setSavedRecord(newRequestResult);
 
-      // Mark the original LabRequest as completed
-      const labReq = await labRequestApi.list({
-        caseId: formData.caseNumber,
-        lab: "parasitology",
-        status: "pending",
-      });
-      if (labReq && labReq.length > 0) {
-        await labRequestApi.update(labReq[0]._id, { status: "completed" });
+        const labReq = await labRequestApi.list({
+          caseId: formData.caseNumber,
+          lab: "parasitology",
+          status: "pending",
+        });
+        if (labReq && labReq.length > 0) {
+          await labRequestApi.update(labReq[0]._id, { status: "completed" });
+        }
+      } else {
+        const res = await parasitologyApi.create(payload);
+        setSavedRecord(res);
       }
-    } else {
-      // Normal case assignment – save to Parasitology collection
-      const res = await parasitologyApi.create(payload);
-      setSavedRecord(res);
-    }
 
-    setSubmitted(true);
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+      setSubmitted(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const inputStyle = "w-full bg-slate-50 border border-slate-300 p-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition-colors font-mono";
   const labelStyle = "block text-[11px] uppercase tracking-wider font-semibold text-slate-700 mb-1";
@@ -225,7 +242,7 @@ export default function ParasitologyPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div><label className={labelStyle}>Case Number</label><input type="text" value={formData.caseNumber} onChange={(e) => handleInputChange("caseNumber", e.target.value)} className={inputStyle} readOnly={!!caseIdFromUrl} /></div>
                   <div><label className={labelStyle}>Date Received <span className="text-red-600">*</span></label><input type="date" required value={formData.dateReceived} onChange={(e) => handleInputChange("dateReceived", e.target.value)} className={inputStyle} /></div>
-                  <div><label className={labelStyle}>Sample Type <span className="text-red-600">*</span></label><select value={formData.sampleType} onChange={(e) => handleInputChange("sampleType", e.target.value)} className={inputStyle}><option value="">Select</option><option value="feces">Feces</option><option value="blood_smear">Blood Smear</option><option value="skin_scraping">Skin Scraping</option><option value="hair_pluck">Hair Pluck</option><option value="ear_swab">Ear Swab</option><option value="tissue">Tissue</option><option value="urine">Urine</option><option value="other">Other</option></select></div>
+                  <div><label className={labelStyle}>Sample Type</label><select value={formData.sampleType} onChange={(e) => handleInputChange("sampleType", e.target.value)} className={inputStyle}><option value="">Select</option><option value="feces">Feces</option><option value="blood_smear">Blood Smear</option><option value="skin_scraping">Skin Scraping</option><option value="hair_pluck">Hair Pluck</option><option value="ear_swab">Ear Swab</option><option value="tissue">Tissue</option><option value="urine">Urine</option><option value="other">Other</option></select></div>
                   <div><label className={labelStyle}>Collection Method</label><input type="text" placeholder="e.g. Rectal Retrieval" value={formData.collectionMethod} onChange={(e) => handleInputChange("collectionMethod", e.target.value)} className={inputStyle} /></div>
                   <div><label className={labelStyle}>Sample Condition</label><select value={formData.sampleCondition} onChange={(e) => handleInputChange("sampleCondition", e.target.value)} className={inputStyle}><option value="">Select</option><option value="fresh">Fresh</option><option value="refrigerated">Refrigerated</option><option value="preserved">Preserved</option><option value="old">Old</option></select></div>
                 </div>
