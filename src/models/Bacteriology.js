@@ -5,7 +5,7 @@ const BacteriologySchema = new mongoose.Schema({
   doc: { type: String, required: true },
   dateReceived: { type: Date, default: Date.now },
   sample: {
-    type: { type: String, enum: ['blood', 'urine', 'milk', 'feces', 'nasal_swab', 'pus', 'tissue', 'ear_swab', 'skin', 'csf', 'other'], required: true },
+    type: { type: String, enum: ['blood', 'urine', 'milk', 'feces', 'nasal_swab', 'pus', 'tissue', 'ear_swab', 'skin', 'csf', 'other',''], default:'' },
     collectionMethod: { type: String, default: '' },
     site: { type: String, default: '' },
   },
