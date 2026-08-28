@@ -5,7 +5,11 @@ const BacteriologySchema = new mongoose.Schema({
   doc: { type: String, required: true },
   dateReceived: { type: Date, default: Date.now },
   sample: {
-    type: { type: String, enum: ['blood', 'urine', 'milk', 'feces', 'nasal_swab', 'pus', 'tissue', 'ear_swab', 'skin', 'csf', 'other',''], default:'' },
+    type: { 
+      type: String, 
+      enum: ['blood', 'urine', 'milk', 'feces', 'nasal_swab', 'pus', 'tissue', 'ear_swab', 'skin', 'csf', 'other', ''], 
+      default: '' 
+    },
     collectionMethod: { type: String, default: '' },
     site: { type: String, default: '' },
   },
@@ -13,13 +17,29 @@ const BacteriologySchema = new mongoose.Schema({
     mediaUsed: [{ type: String }],
     incubation: {
       temperature: { type: String, default: '37°C' },
-      atmosphere: { type: String, enum: ['aerobic', 'anaerobic', 'microaerophilic', 'co2'], default: 'aerobic' },
+      atmosphere: { 
+        type: String, 
+        enum: ['aerobic', 'anaerobic', 'microaerophilic', 'co2', ''], 
+        default: 'aerobic' 
+      },
       duration: { type: String, default: '24-72 hours' },
     },
     growthObservation: {
-      hours24: { type: String, enum: ['no_growth', 'scanty', 'moderate', 'heavy'], default: 'no_growth' },
-      hours48: { type: String, enum: ['no_growth', 'scanty', 'moderate', 'heavy'], default: 'no_growth' },
-      hours72: { type: String, enum: ['no_growth', 'scanty', 'moderate', 'heavy'], default: 'no_growth' },
+      hours24: { 
+        type: String, 
+        enum: ['no_growth', 'scanty', 'moderate', 'heavy', ''], 
+        default: 'no_growth' 
+      },
+      hours48: { 
+        type: String, 
+        enum: ['no_growth', 'scanty', 'moderate', 'heavy', ''], 
+        default: 'no_growth' 
+      },
+      hours72: { 
+        type: String, 
+        enum: ['no_growth', 'scanty', 'moderate', 'heavy', ''], 
+        default: 'no_growth' 
+      },
     },
   },
   colonyMorphology: {
@@ -30,11 +50,19 @@ const BacteriologySchema = new mongoose.Schema({
     elevation: { type: String, default: '' },
     margin: { type: String, default: '' },
     consistency: { type: String, default: '' },
-    hemolysis: { type: String, enum: ['alpha', 'beta', 'gamma'], default: '' },
+    hemolysis: { 
+      type: String, 
+      enum: ['alpha', 'beta', 'gamma', ''],   // <-- added '' 
+      default: '' 
+    },
     odor: { type: String, default: '' },
   },
   gramStain: {
-    gramReaction: { type: String, enum: ['gram_positive', 'gram_negative', 'acid_fast'], default: '' },
+    gramReaction: { 
+      type: String, 
+      enum: ['gram_positive', 'gram_negative', 'acid_fast', ''],  // <-- added ''
+      default: '' 
+    },
     bacterialMorphology: { type: String, default: '' },
     microscopicFindings: { type: String, default: '' },
   },
@@ -52,14 +80,26 @@ const BacteriologySchema = new mongoose.Schema({
   },
   organismIdentification: {
     organismName: { type: String, default: '' },
-    confidenceLevel: { type: String, enum: ['definitive', 'presumptive', 'tentative'], default: 'tentative' },
+    confidenceLevel: { 
+      type: String, 
+      enum: ['definitive', 'presumptive', 'tentative', ''], 
+      default: 'tentative' 
+    },
   },
   antibioticSensitivity: {
-    method: { type: String, enum: ['kirby_bauer', 'mic', 'e_test', 'vitek'], default: 'kirby_bauer' },
+    method: { 
+      type: String, 
+      enum: ['kirby_bauer', 'mic', 'e_test', 'vitek', ''], 
+      default: 'kirby_bauer' 
+    },
     results: [{
-      antibiotic: String,
-      zoneSize: String,
-      interpretation: { type: String, enum: ['s', 'i', 'r'], default: 's' },
+      antibiotic: { type: String, default: '' },
+      zoneSize: { type: String, default: '' },
+      interpretation: { 
+        type: String, 
+        enum: ['s', 'i', 'r', ''], 
+        default: 's' 
+      },
     }],
   },
   interpretation: { type: String, default: '' },
