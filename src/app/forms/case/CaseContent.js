@@ -114,12 +114,26 @@ export default function VeterinaryCaseForm() {
 
   const totalSteps = 7;
 
-  // On mount: fetch case for edit (or leave caseNumber empty for new)
+  // Fetch the next case number (without incrementing) for new cases
+  const fetchNextNumber = async () => {
+    try {
+      const res = await fetch("/api/case/next-number"); // no increment
+      const data = await res.json();
+      if (data.caseNumber) {
+        setFormData((prev) => ({ ...prev, caseNumber: data.caseNumber }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch next case number:", err);
+    }
+  };
+
+  // On mount: fetch case for edit or generate next number (peek)
   useEffect(() => {
     if (editId) {
       fetchCaseForEdit(editId);
+    } else {
+      fetchNextNumber();
     }
-    // No auto‑generation for new cases – number will be assigned on save
   }, [editId]);
 
   // Auto-fill "Recorded By" with logged-in user's name
@@ -281,74 +295,75 @@ export default function VeterinaryCaseForm() {
       selectedRumenTests: [],
       rumenNotes: "",
     });
+    // If it's a new case, refetch the next number (peek)
+    if (!editId) {
+      fetchNextNumber();
+    }
   };
 
-  const buildPayload = (overrideCaseNumber = null) => {
-    const caseNumber = overrideCaseNumber || formData.caseNumber;
-    return {
-      caseInfo: {
-        date: formData.date,
-        caseNumber: caseNumber,
+  const buildPayload = (caseNumber) => ({
+    caseInfo: {
+      date: formData.date,
+      caseNumber: caseNumber,
+    },
+    owner: {
+      fullName: formData.ownerName,
+      address: formData.address,
+      telephone: formData.telephone,
+    },
+    patient: {
+      species: formData.species,
+      numberOfAnimals: formData.numberOfAnimals
+        ? Number(formData.numberOfAnimals)
+        : 1,
+      breed: formData.breed,
+      animalId: formData.animalId,
+      sex: formData.sex,
+      age: formData.age,
+      weight: formData.weight ? Number(formData.weight) : null,
+    },
+    lab: formData.lab,
+    doc: formData.doc,
+    by: formData.by,
+    anamnesis: {
+      history: formData.medicalHistory,
+    },
+    physicalExam: {
+      demeanor: formData.demeanor,
+      bcs: formData.bcs,
+      mucousMembrane: formData.mucousMembrane,
+      respiratoryRate: formData.respiratoryRate,
+      crt: formData.crt,
+      pulseRate: formData.pulseRate,
+      heartSound: formData.heartSound,
+      giMotility: formData.giMotility,
+      lungSound: formData.lungSound,
+      temperature: formData.temperature ? Number(formData.temperature) : null,
+      otherFindings: formData.otherClinicalFindings,
+    },
+    labDirectives: {
+      blood: {
+        tests: formData.selectedBloodTests,
+        notes: formData.bloodNotes,
       },
-      owner: {
-        fullName: formData.ownerName,
-        address: formData.address,
-        telephone: formData.telephone,
+      urine: {
+        tests: formData.selectedUrineTests,
+        notes: formData.urineNotes,
       },
-      patient: {
-        species: formData.species,
-        numberOfAnimals: formData.numberOfAnimals
-          ? Number(formData.numberOfAnimals)
-          : 1,
-        breed: formData.breed,
-        animalId: formData.animalId,
-        sex: formData.sex,
-        age: formData.age,
-        weight: formData.weight ? Number(formData.weight) : null,
+      feces: {
+        tests: formData.selectedFecesTests,
+        notes: formData.fecesNotes,
       },
-      lab: formData.lab,
-      doc: formData.doc,
-      by: formData.by,
-      anamnesis: {
-        history: formData.medicalHistory,
+      nasal: {
+        tests: formData.selectedNasalTests,
+        notes: formData.nasalNotes,
       },
-      physicalExam: {
-        demeanor: formData.demeanor,
-        bcs: formData.bcs,
-        mucousMembrane: formData.mucousMembrane,
-        respiratoryRate: formData.respiratoryRate,
-        crt: formData.crt,
-        pulseRate: formData.pulseRate,
-        heartSound: formData.heartSound,
-        giMotility: formData.giMotility,
-        lungSound: formData.lungSound,
-        temperature: formData.temperature ? Number(formData.temperature) : null,
-        otherFindings: formData.otherClinicalFindings,
+      rumen: {
+        tests: formData.selectedRumenTests,
+        notes: formData.rumenNotes,
       },
-      labDirectives: {
-        blood: {
-          tests: formData.selectedBloodTests,
-          notes: formData.bloodNotes,
-        },
-        urine: {
-          tests: formData.selectedUrineTests,
-          notes: formData.urineNotes,
-        },
-        feces: {
-          tests: formData.selectedFecesTests,
-          notes: formData.fecesNotes,
-        },
-        nasal: {
-          tests: formData.selectedNasalTests,
-          notes: formData.nasalNotes,
-        },
-        rumen: {
-          tests: formData.selectedRumenTests,
-          notes: formData.rumenNotes,
-        },
-      },
-    };
-  };
+    },
+  });
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
@@ -363,15 +378,15 @@ export default function VeterinaryCaseForm() {
     try {
       let finalCaseNumber = formData.caseNumber;
 
-      // For new cases, fetch the next number before saving
+      // For new cases, atomically increment and get the new number
       if (!editId) {
-        const res = await fetch("/api/case/next-number");
+        const res = await fetch("/api/case/next-number?increment=true");
         const data = await res.json();
         if (!data.caseNumber) {
           throw new Error("Failed to generate case number");
         }
         finalCaseNumber = data.caseNumber;
-        // Update the form display immediately
+        // Update the form display
         setFormData((prev) => ({ ...prev, caseNumber: finalCaseNumber }));
       }
 
@@ -497,7 +512,6 @@ export default function VeterinaryCaseForm() {
                       value={formData.caseNumber}
                       readOnly
                       className={inputStyle}
-                      placeholder={editId ? "" : "Pending (will be assigned on save)"}
                     />
                   </div>
                   <div>
