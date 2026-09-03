@@ -88,7 +88,7 @@ export default function VeterinaryCaseForm() {
     sex: "",
     age: "",
     weight: "",
-    medicalHistory: "", // combined
+    medicalHistory: "",
     demeanor: "",
     bcs: "",
     mucousMembrane: "",
@@ -114,26 +114,12 @@ export default function VeterinaryCaseForm() {
 
   const totalSteps = 7;
 
-  // Fetch next case number for new cases
-  const fetchNextCaseNumber = async () => {
-    try {
-      const res = await fetch("/api/case/next-number");
-      const data = await res.json();
-      if (data.caseNumber) {
-        setFormData((prev) => ({ ...prev, caseNumber: data.caseNumber }));
-      }
-    } catch (err) {
-      console.error("Failed to fetch next case number:", err);
-    }
-  };
-
-  // On mount: fetch case for edit or generate new number
+  // On mount: fetch case for edit (or leave caseNumber empty for new)
   useEffect(() => {
     if (editId) {
       fetchCaseForEdit(editId);
-    } else {
-      fetchNextCaseNumber();
     }
+    // No auto‑generation for new cases – number will be assigned on save
   }, [editId]);
 
   // Auto-fill "Recorded By" with logged-in user's name
@@ -295,75 +281,74 @@ export default function VeterinaryCaseForm() {
       selectedRumenTests: [],
       rumenNotes: "",
     });
-    // Fetch fresh number for new case
-    if (!editId) {
-      fetchNextCaseNumber();
-    }
   };
 
-  const buildPayload = () => ({
-    caseInfo: {
-      date: formData.date,
-      caseNumber: formData.caseNumber,
-    },
-    owner: {
-      fullName: formData.ownerName,
-      address: formData.address,
-      telephone: formData.telephone,
-    },
-    patient: {
-      species: formData.species,
-      numberOfAnimals: formData.numberOfAnimals
-        ? Number(formData.numberOfAnimals)
-        : 1,
-      breed: formData.breed,
-      animalId: formData.animalId,
-      sex: formData.sex,
-      age: formData.age,
-      weight: formData.weight ? Number(formData.weight) : null,
-    },
-    lab: formData.lab,
-    doc: formData.doc,
-    by: formData.by,
-    anamnesis: {
-      history: formData.medicalHistory,
-    },
-    physicalExam: {
-      demeanor: formData.demeanor,
-      bcs: formData.bcs,
-      mucousMembrane: formData.mucousMembrane,
-      respiratoryRate: formData.respiratoryRate,
-      crt: formData.crt,
-      pulseRate: formData.pulseRate,
-      heartSound: formData.heartSound,
-      giMotility: formData.giMotility,
-      lungSound: formData.lungSound,
-      temperature: formData.temperature ? Number(formData.temperature) : null,
-      otherFindings: formData.otherClinicalFindings,
-    },
-    labDirectives: {
-      blood: {
-        tests: formData.selectedBloodTests,
-        notes: formData.bloodNotes,
+  const buildPayload = (overrideCaseNumber = null) => {
+    const caseNumber = overrideCaseNumber || formData.caseNumber;
+    return {
+      caseInfo: {
+        date: formData.date,
+        caseNumber: caseNumber,
       },
-      urine: {
-        tests: formData.selectedUrineTests,
-        notes: formData.urineNotes,
+      owner: {
+        fullName: formData.ownerName,
+        address: formData.address,
+        telephone: formData.telephone,
       },
-      feces: {
-        tests: formData.selectedFecesTests,
-        notes: formData.fecesNotes,
+      patient: {
+        species: formData.species,
+        numberOfAnimals: formData.numberOfAnimals
+          ? Number(formData.numberOfAnimals)
+          : 1,
+        breed: formData.breed,
+        animalId: formData.animalId,
+        sex: formData.sex,
+        age: formData.age,
+        weight: formData.weight ? Number(formData.weight) : null,
       },
-      nasal: {
-        tests: formData.selectedNasalTests,
-        notes: formData.nasalNotes,
+      lab: formData.lab,
+      doc: formData.doc,
+      by: formData.by,
+      anamnesis: {
+        history: formData.medicalHistory,
       },
-      rumen: {
-        tests: formData.selectedRumenTests,
-        notes: formData.rumenNotes,
+      physicalExam: {
+        demeanor: formData.demeanor,
+        bcs: formData.bcs,
+        mucousMembrane: formData.mucousMembrane,
+        respiratoryRate: formData.respiratoryRate,
+        crt: formData.crt,
+        pulseRate: formData.pulseRate,
+        heartSound: formData.heartSound,
+        giMotility: formData.giMotility,
+        lungSound: formData.lungSound,
+        temperature: formData.temperature ? Number(formData.temperature) : null,
+        otherFindings: formData.otherClinicalFindings,
       },
-    },
-  });
+      labDirectives: {
+        blood: {
+          tests: formData.selectedBloodTests,
+          notes: formData.bloodNotes,
+        },
+        urine: {
+          tests: formData.selectedUrineTests,
+          notes: formData.urineNotes,
+        },
+        feces: {
+          tests: formData.selectedFecesTests,
+          notes: formData.fecesNotes,
+        },
+        nasal: {
+          tests: formData.selectedNasalTests,
+          notes: formData.nasalNotes,
+        },
+        rumen: {
+          tests: formData.selectedRumenTests,
+          notes: formData.rumenNotes,
+        },
+      },
+    };
+  };
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
@@ -376,9 +361,22 @@ export default function VeterinaryCaseForm() {
     setLoading(true);
 
     try {
-      const payload = buildPayload();
-      let data;
+      let finalCaseNumber = formData.caseNumber;
 
+      // For new cases, fetch the next number before saving
+      if (!editId) {
+        const res = await fetch("/api/case/next-number");
+        const data = await res.json();
+        if (!data.caseNumber) {
+          throw new Error("Failed to generate case number");
+        }
+        finalCaseNumber = data.caseNumber;
+        // Update the form display immediately
+        setFormData((prev) => ({ ...prev, caseNumber: finalCaseNumber }));
+      }
+
+      const payload = buildPayload(finalCaseNumber);
+      let data;
       if (editId) {
         data = await casesApi.update(editId, payload);
       } else {
@@ -499,6 +497,7 @@ export default function VeterinaryCaseForm() {
                       value={formData.caseNumber}
                       readOnly
                       className={inputStyle}
+                      placeholder={editId ? "" : "Pending (will be assigned on save)"}
                     />
                   </div>
                   <div>
