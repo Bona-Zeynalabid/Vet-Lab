@@ -207,13 +207,10 @@ export default function CompletedCaseDetailPage() {
           </div>
 
           {/* Owner's Complaint / History */}
-          <div className="flex items-end gap-x-4 mb-3">
-            <span className="font-bold">Owner's complaint:</span>
-            <div className="flex-1 border-b border-black px-2">{owners_complaint}</div>
-          </div>
+      
 
           <div className="flex items-end gap-x-4 mb-3">
-            <span className="font-bold">History/ Anamnesis:</span>
+            <span className="font-bold">Medical History:</span>
             <div className="flex-1 border-b border-black px-2">{history_anamnesis}</div>
           </div>
 
