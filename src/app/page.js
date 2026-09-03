@@ -19,14 +19,49 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-[#1a1a1a] overflow-hidden">
+    <div className="min-h-screen bg-white font-sans text-[#1a1a1a]">
 
-      {/* === HERO SECTION === */}
-      <section className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden bg-[#1a1a1a]">
+      {/* Navigation – original header */}
+      <nav className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between lg:px-8 sticky top-0 z-20">
+        <div className="flex items-center gap-3">
+          <Image
+            src="/assets/Screenshot 2025-12-18 091949.png"
+            alt="University Logo"
+            width={36}
+            height={36}
+            className="object-contain"
+            unoptimized
+            priority
+          />
+          <Image
+            src="/assets/blogo.png"
+            alt="Brooke Logo"
+            width={36}
+            height={36}
+            className="object-contain"
+            unoptimized
+            priority
+          />
+          <span className="font-mono uppercase tracking-widest text-sm font-bold text-[#1a1a1a]">
+            Hawassa University FVM
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={(e) => handleAuthClick(e, "/login")}
+            className="px-5 py-2 bg-[#1a1a1a] text-white text-[10px] font-mono uppercase tracking-widest font-bold hover:bg-orange-500 transition-colors rounded-sm"
+          >
+            Sign In
+          </button>
+        </div>
+      </nav>
+
+      {/* === HERO SECTION – white background, logo contained === */}
+      <section className="relative min-h-[80vh] flex items-center justify-center px-4 overflow-hidden bg-white">
         
-        {/* Dominant blogo.png – huge, centered, subtle */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="relative w-[90%] max-w-4xl aspect-square opacity-20 md:opacity-30">
+        {/* Dominant blogo.png – not stretched, white background fills extra space */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-white">
+          <div className="relative w-[80%] max-w-3xl aspect-square">
             <Image
               src="/assets/blogo.png"
               alt="Brooke Logo"
@@ -38,36 +73,34 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Orange glow accent */}
+        {/* Orange glow accent (optional) */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Content overlay */}
         <div className="relative z-10 text-center max-w-4xl mx-auto">
-          {/* Small badge */}
-          <div className="inline-block px-4 py-1.5 border border-orange-500/30 text-orange-400 text-[10px] font-mono uppercase tracking-[0.2em] rounded-full mb-6 bg-orange-500/10 backdrop-blur-sm">
+          <div className="inline-block px-4 py-1.5 border border-orange-500/30 text-orange-600 text-[10px] font-mono uppercase tracking-[0.2em] rounded-full mb-6 bg-orange-50/80 backdrop-blur-sm">
             Veterinary Clinical System
           </div>
 
-          {/* Main headline – HU-Brooke VetTrack */}
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold uppercase tracking-tight leading-tight">
-            <span className="text-white">HU-Brooke</span>
+            <span className="text-[#1a1a1a]">HU-Brooke</span>
             <span className="text-orange-500 block sm:inline"> VetTrack</span>
           </h1>
 
-          <p className="mt-5 text-sm sm:text-base text-white/70 font-mono max-w-2xl mx-auto bg-white/5 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/10">
+          <p className="mt-5 text-sm sm:text-base text-[#1a1a1a]/70 font-mono max-w-2xl mx-auto bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-slate-200/60">
             Complete clinical management — case registration, lab diagnostics, diagnosis, and pharmacy.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
             <button
               onClick={(e) => handleAuthClick(e, "/login")}
-              className="px-8 py-3.5 bg-orange-500 text-white text-xs font-mono uppercase tracking-widest font-bold hover:bg-orange-600 transition-colors rounded-sm shadow-lg shadow-orange-500/25"
+              className="px-8 py-3.5 bg-[#1a1a1a] text-white text-xs font-mono uppercase tracking-widest font-bold hover:bg-orange-500 transition-colors rounded-sm shadow-md"
             >
               Get Started
             </button>
             <button
               onClick={(e) => handleAuthClick(e, "/register")}
-              className="px-8 py-3.5 border border-white/20 text-white/80 text-xs font-mono uppercase tracking-widest font-bold hover:bg-white/10 hover:border-white/40 transition-colors rounded-sm bg-white/5 backdrop-blur-sm"
+              className="px-8 py-3.5 border border-slate-300 text-[#1a1a1a] text-xs font-mono uppercase tracking-widest font-bold hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors rounded-sm bg-white/60 backdrop-blur-sm"
             >
               Create Account
             </button>
@@ -75,7 +108,7 @@ export default function LandingPage() {
         </div>
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/30 text-[10px] font-mono uppercase tracking-[0.2em] animate-bounce">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[#1a1a1a]/30 text-[10px] font-mono uppercase tracking-[0.2em] animate-bounce">
           Scroll
         </div>
       </section>
@@ -158,7 +191,7 @@ export default function LandingPage() {
           <div className="mt-6">
             <button
               onClick={(e) => handleAuthClick(e, "/login")}
-              className="px-8 py-3.5 bg-orange-500 text-white text-xs font-mono uppercase tracking-widest font-bold hover:bg-orange-600 transition-colors rounded-sm shadow-lg shadow-orange-500/25"
+              className="px-8 py-3.5 bg-[#1a1a1a] text-white text-xs font-mono uppercase tracking-widest font-bold hover:bg-orange-500 transition-colors rounded-sm shadow-md"
             >
               Start Now
             </button>
