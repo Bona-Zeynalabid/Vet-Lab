@@ -23,7 +23,7 @@ export default function GlobalHeader() {
   }, []);
 
   return (
-    <header className="bg-white border-b-2 border-slate-800 px-3 sm:px-6 py-2 flex items-center justify-between font-sans shadow-xs min-w-0 w-full print:hidden">
+    <header className="bg-white border-b-2 border-orange-400 px-3 sm:px-6 py-2 flex items-center justify-between font-sans shadow-xs min-w-0 w-full print:hidden">
       {/* Brand Identity */}
       <div className="flex items-center gap-3 min-w-0">
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
