@@ -69,7 +69,7 @@ export default function LandingPage() {
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-tight leading-tight">
                 <span className="text-[#1a1a1a]">HU-Brooke</span>
-                <span className="text-orange-500 block sm:inline"> VetTrack</span>
+                <span className="text-orange-500 block sm:inline"> Vet Track</span>
               </h1>
 
               <p className="mt-4 text-sm sm:text-base text-[#1a1a1a]/70 font-mono max-w-lg mx-auto lg:mx-0">
