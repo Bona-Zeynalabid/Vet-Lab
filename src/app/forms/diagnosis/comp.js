@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { diagnosisApi, pharmacyApi, medicineApi } from "@/lib/api";
+import { diagnosisApi, pharmacyApi, medicineApi, casesApi } from "@/lib/api";
 import { getLoggedInUserName } from "@/lib/userUtils";
 
 const confirmationMethods = [
@@ -21,6 +21,7 @@ export default function DoctorDiagnosisPage() {
   const [loading, setLoading] = useState(false);
   const [savedRecord, setSavedRecord] = useState(null);
   const [medicinesList, setMedicinesList] = useState([]);
+  const [patientWeight, setPatientWeight] = useState(null);
 
   const totalSteps = 4;
 
@@ -39,6 +40,23 @@ export default function DoctorDiagnosisPage() {
     followUpDate: "",
     followUpInstructions: "",
   });
+
+  // Fetch case data to get patient weight
+  useEffect(() => {
+    const fetchCase = async () => {
+      if (!caseIdFromUrl) return;
+      try {
+        const result = await casesApi.list({ caseNumber: caseIdFromUrl });
+        if (result && result.length > 0) {
+          const weight = result[0].patient?.weight;
+          if (weight) setPatientWeight(Number(weight));
+        }
+      } catch (err) {
+        console.error("Failed to fetch case details:", err);
+      }
+    };
+    fetchCase();
+  }, [caseIdFromUrl]);
 
   useEffect(() => {
     if (caseIdFromUrl) {
@@ -78,12 +96,58 @@ export default function DoctorDiagnosisPage() {
     });
   };
 
+  // Extract numeric value from a string like "10 mg/kg" -> 10
+  const extractNumeric = (str) => {
+    if (!str) return null;
+    const match = str.match(/^[\d.]+/);
+    return match ? parseFloat(match[0]) : null;
+  };
+
+  // Auto‑fill concentration, dosage, and amount when medicine name changes
+  const autoFillMedicine = (index, medicineName) => {
+    const medicine = medicinesList.find(
+      (m) => m.name.toLowerCase() === medicineName.toLowerCase().trim()
+    );
+    if (!medicine) {
+      // If no match, leave fields as is (user might be typing freely)
+      return;
+    }
+
+    const updates = {};
+    if (medicine.concentration) updates.concentration = medicine.concentration;
+    if (medicine.doseRate) updates.dosage = medicine.doseRate;
+
+    // Calculate amount if weight and both doseRate/concentration are available
+    if (patientWeight && medicine.doseRate && medicine.concentration) {
+      const doseVal = extractNumeric(medicine.doseRate);
+      const concVal = extractNumeric(medicine.concentration);
+      if (doseVal !== null && concVal !== null && concVal > 0) {
+        const amount = (patientWeight * doseVal) / concVal;
+        updates.amount = amount.toFixed(2);
+      }
+    }
+
+    // Update only if we have something to set
+    if (Object.keys(updates).length > 0) {
+      setFormData((prev) => {
+        const updated = [...prev.medicines];
+        updated[index] = { ...updated[index], ...updates };
+        return { ...prev, medicines: updated };
+      });
+    }
+  };
+
   const handleMedicineChange = (index, field, value) => {
     setFormData((prev) => {
       const updated = [...prev.medicines];
       updated[index] = { ...updated[index], [field]: value };
       return { ...prev, medicines: updated };
     });
+
+    // If the field is "name", trigger auto‑fill
+    if (field === "name") {
+      autoFillMedicine(index, value);
+    }
   };
 
   const addMedicine = () => {
@@ -100,10 +164,8 @@ export default function DoctorDiagnosisPage() {
       case 1:
         return formData.caseNumber.trim() !== "" && formData.date.trim() !== "" && formData.attendingVet.trim() !== "";
       case 2:
-        // Tentative and Definitive diagnoses are now optional – always valid
         return true;
       case 3:
-        // Prescriptions are optional – always valid
         return true;
       default:
         return true;
@@ -236,23 +298,23 @@ export default function DoctorDiagnosisPage() {
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2"><h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">Stage 2: Tentative & Definitive Diagnosis</h3></div>
                 <div>
-                  <label className={labelStyle}>Primary Tentative Diagnosis <span className="text-slate-400 font-normal"></span></label>
+                  <label className={labelStyle}>Primary Tentative Diagnosis</label>
                   <input type="text" placeholder="e.g. Bacterial Bronchopneumonia" value={formData.primaryTentative} onChange={(e) => handleInputChange("primaryTentative", e.target.value)} className={inputStyle} />
                 </div>
                 <div>
-                  <label className={labelStyle}>Differential Diagnoses <span className="text-slate-400 font-normal"></span></label>
+                  <label className={labelStyle}>Differential Diagnoses</label>
                   <textarea rows={3} placeholder="One per line..." value={formData.differentialDiagnoses} onChange={(e) => handleInputChange("differentialDiagnoses", e.target.value)} className={inputStyle} />
                 </div>
                 <div>
-                  <label className={labelStyle}>Clinical Justification <span className="text-slate-400 font-normal"></span></label>
+                  <label className={labelStyle}>Clinical Justification</label>
                   <textarea rows={2} placeholder="Supporting findings..." value={formData.clinicalJustification} onChange={(e) => handleInputChange("clinicalJustification", e.target.value)} className={inputStyle} />
                 </div>
                 <div className="border-t border-slate-200 pt-4">
-                  <label className={labelStyle}>Definitive Diagnosis <span className="text-slate-400 font-normal"></span></label>
+                  <label className={labelStyle}>Definitive Diagnosis</label>
                   <input type="text" placeholder="e.g. Pasteurella multocida Bronchopneumonia" value={formData.definitiveDiagnosis} onChange={(e) => handleInputChange("definitiveDiagnosis", e.target.value)} className={inputStyle} />
                 </div>
                 <fieldset className="border border-slate-300 p-3 space-y-2">
-                  <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">Confirmation Methods <span className="font-normal text-slate-400"></span></legend>
+                  <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">Confirmation Methods</legend>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {confirmationMethods.map((method) => (
                       <label key={method} className="flex items-center space-x-2 text-xs cursor-pointer">
@@ -263,7 +325,7 @@ export default function DoctorDiagnosisPage() {
                   </div>
                 </fieldset>
                 <div>
-                  <label className={labelStyle}>Diagnostic Notes <span className="text-slate-400 font-normal"></span></label>
+                  <label className={labelStyle}>Diagnostic Notes</label>
                   <textarea rows={2} placeholder="Lab verification parameters..." value={formData.diagnosticNotes} onChange={(e) => handleInputChange("diagnosticNotes", e.target.value)} className={inputStyle} />
                 </div>
               </div>
@@ -308,6 +370,11 @@ export default function DoctorDiagnosisPage() {
                     <option key={med._id} value={med.name} />
                   ))}
                 </datalist>
+                {patientWeight && (
+                  <div className="text-xs text-slate-500 font-mono border-t border-slate-200 pt-2">
+                    Patient weight: <span className="font-semibold">{patientWeight} kg</span> – amount auto‑filled when medicine selected.
+                  </div>
+                )}
               </div>
             )}
 
