@@ -720,40 +720,57 @@ export default function VeterinaryCaseForm() {
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {/* Demeanor - dropdown */}
                   <div>
                     <label className={labelStyle}>Demeanor</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. BAR, Lethargic"
+                    <select
                       value={formData.demeanor}
-                      onChange={(e) =>
-                        handleInputChange("demeanor", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("demeanor", e.target.value)}
                       className={inputStyle}
-                    />
+                    >
+                      <option value="">Select</option>
+                      <option value="Bright">Bright</option>
+                      <option value="Dull">Dull</option>
+                      <option value="Restless">Restless</option>
+                    </select>
                   </div>
+
+                  {/* Body Condition - dropdown */}
                   <div>
-                    <label className={labelStyle}>BCS Index</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 5/9"
+                    <label className={labelStyle}>Body Condition</label>
+                    <select
                       value={formData.bcs}
                       onChange={(e) => handleInputChange("bcs", e.target.value)}
                       className={inputStyle}
-                    />
+                    >
+                      <option value="">Select</option>
+                      <option value="Normal">Normal</option>
+                      <option value="Thin (Poor)">Thin (Poor)</option>
+                      <option value="Emaciated">Emaciated</option>
+                      <option value="Obese">Obese</option>
+                    </select>
                   </div>
+
+                  {/* Mucous Membrane - dropdown */}
                   <div>
                     <label className={labelStyle}>Mucous Membrane</label>
-                    <input
-                      type="text"
-                      placeholder="Pink, CRT < 2s"
+                    <select
                       value={formData.mucousMembrane}
-                      onChange={(e) =>
-                        handleInputChange("mucousMembrane", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("mucousMembrane", e.target.value)}
                       className={inputStyle}
-                    />
+                    >
+                      <option value="">Select</option>
+                      <option value="Pale">Pale</option>
+                      <option value="Pale pinkish">Pale pinkish</option>
+                      <option value="Hyperemic (brick red)">Hyperemic (brick red)</option>
+                      <option value="Cyanotic">Cyanotic</option>
+                      <option value="Brownish">Brownish</option>
+                      <option value="Jaundice">Jaundice</option>
+                      <option value="Petechiae (Ecchymoses)">Petechiae (Ecchymoses)</option>
+                    </select>
                   </div>
+
+                  {/* Respiratory Rate - text */}
                   <div>
                     <label className={labelStyle}>Resp Rate (BPM)</label>
                     <input
@@ -766,16 +783,22 @@ export default function VeterinaryCaseForm() {
                       className={inputStyle}
                     />
                   </div>
+
+                  {/* CRT - dropdown */}
                   <div>
-                    <label className={labelStyle}>CRT Time</label>
-                    <input
-                      type="text"
-                      placeholder="< 2 sec"
+                    <label className={labelStyle}>CRT</label>
+                    <select
                       value={formData.crt}
                       onChange={(e) => handleInputChange("crt", e.target.value)}
                       className={inputStyle}
-                    />
+                    >
+                      <option value="">Select</option>
+                      <option value="< 2 sec">&lt; 2 sec</option>
+                      <option value="> 2 sec">&gt; 2 sec</option>
+                    </select>
                   </div>
+
+                  {/* Pulse Rate - text */}
                   <div>
                     <label className={labelStyle}>Pulse Rate</label>
                     <input
@@ -788,6 +811,8 @@ export default function VeterinaryCaseForm() {
                       className={inputStyle}
                     />
                   </div>
+
+                  {/* Heart Sound - text */}
                   <div>
                     <label className={labelStyle}>Heart Auscultation</label>
                     <input
@@ -800,6 +825,8 @@ export default function VeterinaryCaseForm() {
                       className={inputStyle}
                     />
                   </div>
+
+                  {/* GI Motility - text */}
                   <div>
                     <label className={labelStyle}>GI Motility</label>
                     <input
@@ -812,6 +839,22 @@ export default function VeterinaryCaseForm() {
                       className={inputStyle}
                     />
                   </div>
+
+                  {/* Lung Sound - text (was missing, now added explicitly) */}
+                  <div>
+                    <label className={labelStyle}>Lung Sound</label>
+                    <input
+                      type="text"
+                      placeholder="Auscultation findings"
+                      value={formData.lungSound}
+                      onChange={(e) =>
+                        handleInputChange("lungSound", e.target.value)
+                      }
+                      className={inputStyle}
+                    />
+                  </div>
+
+                  {/* Temperature - text (number) */}
                   <div>
                     <label className={labelStyle}>Temperature (°C)</label>
                     <input
@@ -826,6 +869,7 @@ export default function VeterinaryCaseForm() {
                     />
                   </div>
                 </div>
+
                 <div>
                   <label className={labelStyle}>
                     Other Physical Examination Notes
