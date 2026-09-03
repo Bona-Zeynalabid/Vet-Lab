@@ -376,19 +376,8 @@ export default function VeterinaryCaseForm() {
     setLoading(true);
 
     try {
-      let finalCaseNumber = formData.caseNumber;
-
-      // For new cases, atomically increment and get the new number
-      if (!editId) {
-        const res = await fetch("/api/case/next-number?increment=true");
-        const data = await res.json();
-        if (!data.caseNumber) {
-          throw new Error("Failed to generate case number");
-        }
-        finalCaseNumber = data.caseNumber;
-        // Update the form display
-        setFormData((prev) => ({ ...prev, caseNumber: finalCaseNumber }));
-      }
+      // Use the number that was displayed (no new fetch)
+      const finalCaseNumber = formData.caseNumber;
 
       const payload = buildPayload(finalCaseNumber);
       let data;
@@ -396,6 +385,11 @@ export default function VeterinaryCaseForm() {
         data = await casesApi.update(editId, payload);
       } else {
         data = await casesApi.create(payload);
+      }
+
+      // --- Only increment the counter after a successful save ---
+      if (!editId) {
+        await fetch("/api/case/next-number?increment=true");
       }
 
       setSavedRecord(data);
