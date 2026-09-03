@@ -9,34 +9,27 @@ const medicineSchema = new mongoose.Schema(
       unique: true,
     },
 
-    // General price (default 0 ETB)
-    price: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-
-    // If liquid form, price per ml or mg
+    // Flag: liquid vs solid
     isLiquid: {
       type: Boolean,
       default: false,
     },
 
-    // For liquid: price per ml/mg
-    pricePerMlMg: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-
-    // Optional price per unit for solids (e.g., per tablet, capsule)
+    // Price per unit for solids (tablets, capsules, etc.)
     pricePerUnit: {
       type: Number,
       default: 0,
       min: 0,
     },
 
-    // Dosage form: tablet, capsule, syrup, injection, etc.
+    // Price per ml/mg for liquids
+    pricePerMlMg: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    // Dosage form (for display)
     dosageForm: {
       type: String,
       enum: [
@@ -54,25 +47,20 @@ const medicineSchema = new mongoose.Schema(
       default: 'other',
     },
 
-    // Unit for measuring (e.g., tablet, bottle, ml, mg, g, etc.)
-    unit: {
+    // Recommended dose rate (optional)
+    doseRate: {
       type: String,
       default: '',
       trim: true,
+      description: 'e.g. "10 mg/kg", "1 tablet/10kg"',
     },
 
-    // Active ingredient (optional)
-    activeIngredient: {
+    // Concentration / strength (optional)
+    concentration: {
       type: String,
       default: '',
       trim: true,
-    },
-
-    // Manufacturer or supplier
-    manufacturer: {
-      type: String,
-      default: '',
-      trim: true,
+      description: 'e.g. "250 mg/mL", "500 mg"',
     },
 
     // Stock quantity
@@ -81,22 +69,6 @@ const medicineSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-
-    // Optional expiry date
-    expiryDate: {
-      type: Date,
-      default: null,
-    },
-
-    // Optional batch number
-    batchNumber: {
-      type: String,
-      default: '',
-      trim: true,
-    },
-
-    // Currency is always ETB (Ethiopian Birr)
-    // No need for a currency field; all prices are in ETB.
   },
   {
     timestamps: true,
@@ -104,7 +76,7 @@ const medicineSchema = new mongoose.Schema(
   }
 );
 
-// Index for quick search by name
+// Indexes
 medicineSchema.index({ name: 1 });
 
 const Medicine =

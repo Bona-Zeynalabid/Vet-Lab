@@ -39,19 +39,17 @@ export default function PharmacyDashboardPage() {
   });
   const [saving, setSaving] = useState(false);
   const [editingMedicine, setEditingMedicine] = useState(null);
+
+  // Updated medicineForm – matches the new model
   const [medicineForm, setMedicineForm] = useState({
     name: "",
-    price: 0,
     isLiquid: false,
-    pricePerMlMg: 0,
-    pricePerUnit: 0,
+    pricePerMlMg: 0,      // for liquids
+    price: 0,             // for solids
     dosageForm: "other",
-    unit: "",
-    activeIngredient: "",
-    manufacturer: "",
     stockQuantity: 0,
-    expiryDate: "",
-    batchNumber: "",
+    doseRate: "",         // new
+    concentration: "",    // new
   });
 
   // State for modal case records with prices
@@ -232,17 +230,13 @@ export default function PharmacyDashboardPage() {
   const resetMedicineForm = () => {
     setMedicineForm({
       name: "",
-      price: 0,
       isLiquid: false,
       pricePerMlMg: 0,
-      pricePerUnit: 0,
+      price: 0,
       dosageForm: "other",
-      unit: "",
-      activeIngredient: "",
-      manufacturer: "",
       stockQuantity: 0,
-      expiryDate: "",
-      batchNumber: "",
+      doseRate: "",
+      concentration: "",
     });
     setEditingMedicine(null);
   };
@@ -251,17 +245,13 @@ export default function PharmacyDashboardPage() {
     setEditingMedicine(med);
     setMedicineForm({
       name: med.name || "",
-      price: med.price || 0,
       isLiquid: med.isLiquid || false,
       pricePerMlMg: med.pricePerMlMg || 0,
-      pricePerUnit: med.pricePerUnit || 0,
+      price: med.price || 0,
       dosageForm: med.dosageForm || "other",
-      unit: med.unit || "",
-      activeIngredient: med.activeIngredient || "",
-      manufacturer: med.manufacturer || "",
       stockQuantity: med.stockQuantity || 0,
-      expiryDate: med.expiryDate ? new Date(med.expiryDate).toISOString().split("T")[0] : "",
-      batchNumber: med.batchNumber || "",
+      doseRate: med.doseRate || "",
+      concentration: med.concentration || "",
     });
     setShowEditMedicineModal(true);
   };
@@ -337,8 +327,8 @@ export default function PharmacyDashboardPage() {
     const q = searchQuery.toLowerCase();
     return (
       m.name.toLowerCase().includes(q) ||
-      (m.manufacturer || "").toLowerCase().includes(q) ||
-      (m.activeIngredient || "").toLowerCase().includes(q)
+      (m.dosageForm || "").toLowerCase().includes(q) ||
+      (m.doseRate || "").toLowerCase().includes(q)
     );
   });
 
@@ -618,10 +608,10 @@ export default function PharmacyDashboardPage() {
                   <tr>
                     <th className="p-2.5">Name</th>
                     <th className="p-2.5">Form</th>
-                    <th className="p-2.5">Unit</th>
+                    <th className="p-2.5">Dose Rate</th>
+                    <th className="p-2.5">Concentration</th>
                     <th className="p-2.5">Price (ETB)</th>
                     <th className="p-2.5">Stock</th>
-                    <th className="p-2.5">Manufacturer</th>
                     <th className="p-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -630,9 +620,12 @@ export default function PharmacyDashboardPage() {
                     <tr key={m._id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-2.5 font-semibold">{m.name}</td>
                       <td className="p-2.5">{m.dosageForm || "-"}</td>
-                      <td className="p-2.5">{m.unit || "-"}</td>
+                      <td className="p-2.5">{m.doseRate || "-"}</td>
+                      <td className="p-2.5">{m.concentration || "-"}</td>
                       <td className="p-2.5">
-                        {m.isLiquid ? `${m.pricePerMlMg || 0} / ${m.unit || "ml"}` : `${m.price || 0}`}
+                        {m.isLiquid
+                          ? `${m.pricePerMlMg || 0} / ml`
+                          : `${m.price || 0}`}
                       </td>
                       <td className="p-2.5">
                         <span className={`${m.stockQuantity < 10 ? "text-red-600 font-bold" : ""}`}>
@@ -644,7 +637,6 @@ export default function PharmacyDashboardPage() {
                           </span>
                         )}
                       </td>
-                      <td className="p-2.5">{m.manufacturer || "-"}</td>
                       <td className="p-2.5 text-right">
                         <div className="flex justify-end gap-1.5">
                           <button
@@ -672,7 +664,7 @@ export default function PharmacyDashboardPage() {
         </div>
       )}
 
-      {/* Prescription Detail Modal */}
+      {/* Prescription Detail Modal (unchanged) */}
       {showPrescriptionModal && selectedRecord && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4">
@@ -781,7 +773,7 @@ export default function PharmacyDashboardPage() {
                   </div>
                 </div>
 
-                {/* Dispensing Details */}
+                {/* Dispensing Details (unchanged) */}
                 <div className="border border-slate-300 p-3 space-y-2">
                   <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-800 border-b pb-1">
                     Dispensing Details {selectedRecord.status === "dispensed" ? "(Completed)" : ""}
@@ -789,9 +781,7 @@ export default function PharmacyDashboardPage() {
                   {selectedRecord.status === "pending" ? (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">
-                          Batch Number
-                        </label>
+                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Batch Number</label>
                         <input
                           type="text"
                           value={editFields.batchNumber}
@@ -800,9 +790,7 @@ export default function PharmacyDashboardPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">
-                          Expiry Date
-                        </label>
+                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Expiry Date</label>
                         <input
                           type="date"
                           value={editFields.expiryDate}
@@ -811,9 +799,7 @@ export default function PharmacyDashboardPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">
-                          Dispensed By
-                        </label>
+                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Dispensed By</label>
                         <input
                           type="text"
                           placeholder="Pharmacist name"
@@ -856,7 +842,7 @@ export default function PharmacyDashboardPage() {
         </div>
       )}
 
-      {/* Add Medicine Modal */}
+      {/* Add Medicine Modal – updated */}
       {showMedicineModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4">
@@ -886,6 +872,7 @@ export default function PharmacyDashboardPage() {
                     placeholder="e.g., Amoxicillin 500mg"
                   />
                 </div>
+
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Dosage Form</label>
                   <select
@@ -905,16 +892,7 @@ export default function PharmacyDashboardPage() {
                     <option value="other">Other</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Unit</label>
-                  <input
-                    type="text"
-                    value={medicineForm.unit}
-                    onChange={(e) => setMedicineForm(prev => ({ ...prev, unit: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-300 p-2 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-slate-800"
-                    placeholder="mg, ml, tablet, bottle"
-                  />
-                </div>
+
                 <div className="flex items-center gap-2 mt-2">
                   <input
                     type="checkbox"
@@ -924,6 +902,7 @@ export default function PharmacyDashboardPage() {
                   />
                   <label className="text-[10px] font-mono font-semibold uppercase">Liquid form</label>
                 </div>
+
                 {medicineForm.isLiquid ? (
                   <div>
                     <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Price per ml/mg (ETB)</label>
@@ -938,7 +917,7 @@ export default function PharmacyDashboardPage() {
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Price per Amount (ETB)</label>
+                    <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Price (ETB)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -949,6 +928,7 @@ export default function PharmacyDashboardPage() {
                     />
                   </div>
                 )}
+
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Stock Quantity</label>
                   <input
@@ -959,33 +939,29 @@ export default function PharmacyDashboardPage() {
                     className="w-full bg-slate-50 border border-slate-300 p-2 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-slate-800"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Manufacturer</label>
+                  <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Dose Rate</label>
                   <input
                     type="text"
-                    value={medicineForm.manufacturer}
-                    onChange={(e) => setMedicineForm(prev => ({ ...prev, manufacturer: e.target.value }))}
+                    placeholder="e.g., 10 mg/kg"
+                    value={medicineForm.doseRate}
+                    onChange={(e) => setMedicineForm(prev => ({ ...prev, doseRate: e.target.value }))}
                     className="w-full bg-slate-50 border border-slate-300 p-2 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-slate-800"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Batch Number</label>
+                  <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Concentration</label>
                   <input
                     type="text"
-                    value={medicineForm.batchNumber}
-                    onChange={(e) => setMedicineForm(prev => ({ ...prev, batchNumber: e.target.value }))}
+                    placeholder="e.g., 250 mg/mL"
+                    value={medicineForm.concentration}
+                    onChange={(e) => setMedicineForm(prev => ({ ...prev, concentration: e.target.value }))}
                     className="w-full bg-slate-50 border border-slate-300 p-2 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-slate-800"
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Expiry Date</label>
-                  <input
-                    type="date"
-                    value={medicineForm.expiryDate}
-                    onChange={(e) => setMedicineForm(prev => ({ ...prev, expiryDate: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-300 p-2 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-slate-800"
-                  />
-                </div>
+
                 <div className="sm:col-span-2 flex justify-end gap-2 pt-4 border-t border-slate-200">
                   <button type="button" onClick={() => setShowMedicineModal(false)} className="px-4 py-2 border border-slate-400 text-slate-700 text-[10px] uppercase font-bold hover:bg-slate-100 transition-colors">Cancel</button>
                   <button type="submit" disabled={saving} className="px-4 py-2 bg-slate-800 text-white text-[10px] uppercase font-bold hover:bg-slate-700 disabled:opacity-50 transition-colors">
@@ -998,7 +974,7 @@ export default function PharmacyDashboardPage() {
         </div>
       )}
 
-      {/* Edit Medicine Modal */}
+      {/* Edit Medicine Modal – updated */}
       {showEditMedicineModal && editingMedicine && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4">
@@ -1027,6 +1003,7 @@ export default function PharmacyDashboardPage() {
                     className="w-full bg-slate-50 border border-slate-300 p-2 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-slate-800"
                   />
                 </div>
+
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Dosage Form</label>
                   <select
@@ -1046,15 +1023,7 @@ export default function PharmacyDashboardPage() {
                     <option value="other">Other</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Unit</label>
-                  <input
-                    type="text"
-                    value={medicineForm.unit}
-                    onChange={(e) => setMedicineForm(prev => ({ ...prev, unit: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-300 p-2 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-slate-800"
-                  />
-                </div>
+
                 <div className="flex items-center gap-2 mt-2">
                   <input
                     type="checkbox"
@@ -1064,6 +1033,7 @@ export default function PharmacyDashboardPage() {
                   />
                   <label className="text-[10px] font-mono font-semibold uppercase">Liquid form</label>
                 </div>
+
                 {medicineForm.isLiquid ? (
                   <div>
                     <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Price per ml/mg (ETB)</label>
@@ -1089,6 +1059,7 @@ export default function PharmacyDashboardPage() {
                     />
                   </div>
                 )}
+
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Stock Quantity</label>
                   <input
@@ -1099,33 +1070,29 @@ export default function PharmacyDashboardPage() {
                     className="w-full bg-slate-50 border border-slate-300 p-2 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-slate-800"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Manufacturer</label>
+                  <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Dose Rate</label>
                   <input
                     type="text"
-                    value={medicineForm.manufacturer}
-                    onChange={(e) => setMedicineForm(prev => ({ ...prev, manufacturer: e.target.value }))}
+                    placeholder="e.g., 10 mg/kg"
+                    value={medicineForm.doseRate}
+                    onChange={(e) => setMedicineForm(prev => ({ ...prev, doseRate: e.target.value }))}
                     className="w-full bg-slate-50 border border-slate-300 p-2 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-slate-800"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Batch Number</label>
+                  <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Concentration</label>
                   <input
                     type="text"
-                    value={medicineForm.batchNumber}
-                    onChange={(e) => setMedicineForm(prev => ({ ...prev, batchNumber: e.target.value }))}
+                    placeholder="e.g., 250 mg/mL"
+                    value={medicineForm.concentration}
+                    onChange={(e) => setMedicineForm(prev => ({ ...prev, concentration: e.target.value }))}
                     className="w-full bg-slate-50 border border-slate-300 p-2 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-slate-800"
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-700 mb-1">Expiry Date</label>
-                  <input
-                    type="date"
-                    value={medicineForm.expiryDate}
-                    onChange={(e) => setMedicineForm(prev => ({ ...prev, expiryDate: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-300 p-2 text-[10px] font-mono focus:outline-none focus:ring-1 focus:ring-slate-800"
-                  />
-                </div>
+
                 <div className="sm:col-span-2 flex justify-end gap-2 pt-4 border-t border-slate-200">
                   <button type="button" onClick={() => setShowEditMedicineModal(false)} className="px-4 py-2 border border-slate-400 text-slate-700 text-[10px] uppercase font-bold hover:bg-slate-100 transition-colors">Cancel</button>
                   <button type="submit" disabled={saving} className="px-4 py-2 bg-slate-800 text-white text-[10px] uppercase font-bold hover:bg-slate-700 disabled:opacity-50 transition-colors">
