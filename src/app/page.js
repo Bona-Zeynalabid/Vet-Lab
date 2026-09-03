@@ -56,61 +56,62 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* === HERO SECTION – white background, logo contained === */}
-      <section className="relative min-h-[80vh] flex items-center justify-center px-4 overflow-hidden bg-white">
-        
-        {/* Dominant blogo.png – not stretched, white background fills extra space */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-white">
-          <div className="relative w-[80%] max-w-3xl aspect-square">
-            <Image
-              src="/assets/blogo.png"
-              alt="Brooke Logo"
-              fill
-              className="object-contain"
-              unoptimized
-              priority
-            />
+      {/* === HERO – split left/right === */}
+      <section className="relative min-h-[80vh] flex items-center bg-white overflow-hidden">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+            
+            {/* Left side – text content */}
+            <div className="flex-1 text-center lg:text-left z-10">
+              <div className="inline-block px-4 py-1.5 border border-orange-500/30 text-orange-600 text-[10px] font-mono uppercase tracking-[0.2em] rounded-full mb-6 bg-orange-50/80 backdrop-blur-sm">
+                Veterinary Clinical System
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold uppercase tracking-tight leading-tight">
+                <span className="text-[#1a1a1a]">HU-Brooke</span>
+                <span className="text-orange-500 block sm:inline"> VetTrack</span>
+              </h1>
+
+              <p className="mt-4 text-sm sm:text-base text-[#1a1a1a]/70 font-mono max-w-lg mx-auto lg:mx-0">
+                Complete clinical management — case registration, lab diagnostics, diagnosis, and pharmacy.
+              </p>
+
+              <div className="mt-8 flex flex-col sm:flex-row justify-center lg:justify-start gap-3">
+                <button
+                  onClick={(e) => handleAuthClick(e, "/login")}
+                  className="px-8 py-3.5 bg-[#1a1a1a] text-white text-xs font-mono uppercase tracking-widest font-bold hover:bg-orange-500 transition-colors rounded-sm shadow-md"
+                >
+                  Get Started
+                </button>
+                <button
+                  onClick={(e) => handleAuthClick(e, "/register")}
+                  className="px-8 py-3.5 border border-slate-300 text-[#1a1a1a] text-xs font-mono uppercase tracking-widest font-bold hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors rounded-sm bg-white/60 backdrop-blur-sm"
+                >
+                  Create Account
+                </button>
+              </div>
+            </div>
+
+            {/* Right side – logo image (not stretched) */}
+            <div className="flex-1 flex justify-center lg:justify-end items-center">
+              <div className="relative w-full max-w-md aspect-square">
+                <div className="absolute inset-0 bg-orange-500/5 rounded-full blur-2xl -z-10" />
+                <Image
+                  src="/assets/blogo.png"
+                  alt="Brooke Logo"
+                  fill
+                  className="object-contain drop-shadow-2xl"
+                  unoptimized
+                  priority
+                />
+              </div>
+            </div>
+
           </div>
         </div>
 
-        {/* Orange glow accent (optional) */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Content overlay */}
-        <div className="relative z-10 text-center max-w-4xl mx-auto">
-          <div className="inline-block px-4 py-1.5 border border-orange-500/30 text-orange-600 text-[10px] font-mono uppercase tracking-[0.2em] rounded-full mb-6 bg-orange-50/80 backdrop-blur-sm">
-            Veterinary Clinical System
-          </div>
-
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold uppercase tracking-tight leading-tight">
-            <span className="text-[#1a1a1a]">HU-Brooke</span>
-            <span className="text-orange-500 block sm:inline"> VetTrack</span>
-          </h1>
-
-          <p className="mt-5 text-sm sm:text-base text-[#1a1a1a]/70 font-mono max-w-2xl mx-auto bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-slate-200/60">
-            Complete clinical management — case registration, lab diagnostics, diagnosis, and pharmacy.
-          </p>
-
-          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
-            <button
-              onClick={(e) => handleAuthClick(e, "/login")}
-              className="px-8 py-3.5 bg-[#1a1a1a] text-white text-xs font-mono uppercase tracking-widest font-bold hover:bg-orange-500 transition-colors rounded-sm shadow-md"
-            >
-              Get Started
-            </button>
-            <button
-              onClick={(e) => handleAuthClick(e, "/register")}
-              className="px-8 py-3.5 border border-slate-300 text-[#1a1a1a] text-xs font-mono uppercase tracking-widest font-bold hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors rounded-sm bg-white/60 backdrop-blur-sm"
-            >
-              Create Account
-            </button>
-          </div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[#1a1a1a]/30 text-[10px] font-mono uppercase tracking-[0.2em] animate-bounce">
-          Scroll
-        </div>
+        {/* Decorative orange accent – subtle */}
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
       </section>
 
       {/* === FEATURES SECTION === */}
