@@ -88,8 +88,7 @@ export default function VeterinaryCaseForm() {
     sex: "",
     age: "",
     weight: "",
-    complaint: "",
-    history: "",
+    medicalHistory: "", // combined
     demeanor: "",
     bcs: "",
     mucousMembrane: "",
@@ -115,12 +114,25 @@ export default function VeterinaryCaseForm() {
 
   const totalSteps = 7;
 
-  // On mount: fetch case for edit or leave caseNumber empty for new case
+  // Fetch next case number for new cases
+  const fetchNextCaseNumber = async () => {
+    try {
+      const res = await fetch("/api/case/next-number");
+      const data = await res.json();
+      if (data.caseNumber) {
+        setFormData((prev) => ({ ...prev, caseNumber: data.caseNumber }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch next case number:", err);
+    }
+  };
+
+  // On mount: fetch case for edit or generate new number
   useEffect(() => {
     if (editId) {
       fetchCaseForEdit(editId);
     } else {
-      setFormData((prev) => ({ ...prev, caseNumber: "" }));
+      fetchNextCaseNumber();
     }
   }, [editId]);
 
@@ -154,8 +166,7 @@ export default function VeterinaryCaseForm() {
         sex: data.patient?.sex || "",
         age: data.patient?.age || "",
         weight: data.patient?.weight || "",
-        complaint: data.anamnesis?.primaryComplaint || "",
-        history: data.anamnesis?.history || "",
+        medicalHistory: data.anamnesis?.history || "",
         demeanor: data.physicalExam?.demeanor || "",
         bcs: data.physicalExam?.bcs || "",
         mucousMembrane: data.physicalExam?.mucousMembrane || "",
@@ -261,8 +272,7 @@ export default function VeterinaryCaseForm() {
       sex: "",
       age: "",
       weight: "",
-      complaint: "",
-      history: "",
+      medicalHistory: "",
       demeanor: "",
       bcs: "",
       mucousMembrane: "",
@@ -285,6 +295,10 @@ export default function VeterinaryCaseForm() {
       selectedRumenTests: [],
       rumenNotes: "",
     });
+    // Fetch fresh number for new case
+    if (!editId) {
+      fetchNextCaseNumber();
+    }
   };
 
   const buildPayload = () => ({
@@ -312,8 +326,7 @@ export default function VeterinaryCaseForm() {
     doc: formData.doc,
     by: formData.by,
     anamnesis: {
-      primaryComplaint: formData.complaint,
-      history: formData.history,
+      history: formData.medicalHistory,
     },
     physicalExam: {
       demeanor: formData.demeanor,
@@ -386,6 +399,8 @@ export default function VeterinaryCaseForm() {
 
   const labelStyle =
     "block text-[11px] uppercase tracking-wider font-semibold text-slate-700 mb-1";
+
+  const showLabDirectives = formData.lab && formData.lab !== "diagnosis";
 
   return (
     <div className="min-h-screen bg-slate-100 p-3 sm:p-6 lg:p-8 font-sans text-slate-900">
@@ -481,11 +496,8 @@ export default function VeterinaryCaseForm() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. 01"
                       value={formData.caseNumber}
-                      onChange={(e) =>
-                        handleInputChange("caseNumber", e.target.value)
-                      }
+                      readOnly
                       className={inputStyle}
                     />
                   </div>
@@ -673,31 +685,19 @@ export default function VeterinaryCaseForm() {
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    Section 5: Anamnesis & Presenting History
+                    Section 5: Medical & Clinical History
                   </h3>
-                </div>
-                <div>
-                  <label className={labelStyle}>Primary Complaint</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Statement of present illness or presenting condition..."
-                    value={formData.complaint}
-                    onChange={(e) =>
-                      handleInputChange("complaint", e.target.value)
-                    }
-                    className={inputStyle}
-                  />
                 </div>
                 <div>
                   <label className={labelStyle}>
                     Medical & Clinical History
                   </label>
                   <textarea
-                    rows={4}
-                    placeholder="Prior treatments, vaccination history, environmental exposure..."
-                    value={formData.history}
+                    rows={6}
+                    placeholder="Prior treatments, vaccination history, environmental exposure, presenting complaint, and all relevant medical background..."
+                    value={formData.medicalHistory}
                     onChange={(e) =>
-                      handleInputChange("history", e.target.value)
+                      handleInputChange("medicalHistory", e.target.value)
                     }
                     className={inputStyle}
                   />
@@ -882,158 +882,162 @@ export default function VeterinaryCaseForm() {
                   </div>
                 )}
 
-                <fieldset className="border border-slate-300 p-3 sm:p-4 space-y-3">
-                  <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">
-                    Blood Sample Directives
-                  </legend>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {bloodTests.map((test) => (
-                      <label
-                        key={test}
-                        className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.selectedBloodTests.includes(test)}
-                          onChange={() =>
-                            handleCheckboxToggle("selectedBloodTests", test)
-                          }
-                          className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
-                        />
-                        <span className="text-slate-700 truncate">{test}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Specific blood diagnostic instructions..."
-                    value={formData.bloodNotes}
-                    onChange={(e) =>
-                      handleInputChange("bloodNotes", e.target.value)
-                    }
-                    className={inputStyle}
-                  />
-                </fieldset>
+                {showLabDirectives && (
+                  <>
+                    <fieldset className="border border-slate-300 p-3 sm:p-4 space-y-3">
+                      <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">
+                        Blood Sample Directives
+                      </legend>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {bloodTests.map((test) => (
+                          <label
+                            key={test}
+                            className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.selectedBloodTests.includes(test)}
+                              onChange={() =>
+                                handleCheckboxToggle("selectedBloodTests", test)
+                              }
+                              className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
+                            />
+                            <span className="text-slate-700 truncate">{test}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Specific blood diagnostic instructions..."
+                        value={formData.bloodNotes}
+                        onChange={(e) =>
+                          handleInputChange("bloodNotes", e.target.value)
+                        }
+                        className={inputStyle}
+                      />
+                    </fieldset>
 
-                <fieldset className="border border-slate-300 p-3 sm:p-4 space-y-3">
-                  <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">
-                    Urine Sample Directives
-                  </legend>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {urineTests.map((test) => (
-                      <label
-                        key={test}
-                        className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.selectedUrineTests.includes(test)}
-                          onChange={() =>
-                            handleCheckboxToggle("selectedUrineTests", test)
-                          }
-                          className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
-                        />
-                        <span className="text-slate-700 truncate">{test}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Specific urinalysis instructions..."
-                    value={formData.urineNotes}
-                    onChange={(e) =>
-                      handleInputChange("urineNotes", e.target.value)
-                    }
-                    className={inputStyle}
-                  />
-                </fieldset>
+                    <fieldset className="border border-slate-300 p-3 sm:p-4 space-y-3">
+                      <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">
+                        Urine Sample Directives
+                      </legend>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {urineTests.map((test) => (
+                          <label
+                            key={test}
+                            className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.selectedUrineTests.includes(test)}
+                              onChange={() =>
+                                handleCheckboxToggle("selectedUrineTests", test)
+                              }
+                              className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
+                            />
+                            <span className="text-slate-700 truncate">{test}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Specific urinalysis instructions..."
+                        value={formData.urineNotes}
+                        onChange={(e) =>
+                          handleInputChange("urineNotes", e.target.value)
+                        }
+                        className={inputStyle}
+                      />
+                    </fieldset>
 
-                <fieldset className="border border-slate-300 p-3 sm:p-4 space-y-3">
-                  <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">
-                    Fecal Sample Directives
-                  </legend>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {fecesTests.map((test) => (
-                      <label
-                        key={test}
-                        className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.selectedFecesTests.includes(test)}
-                          onChange={() =>
-                            handleCheckboxToggle("selectedFecesTests", test)
-                          }
-                          className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
-                        />
-                        <span className="text-slate-700 truncate">{test}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Specific parasitology instructions..."
-                    value={formData.fecesNotes}
-                    onChange={(e) =>
-                      handleInputChange("fecesNotes", e.target.value)
-                    }
-                    className={inputStyle}
-                  />
-                </fieldset>
+                    <fieldset className="border border-slate-300 p-3 sm:p-4 space-y-3">
+                      <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">
+                        Fecal Sample Directives
+                      </legend>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {fecesTests.map((test) => (
+                          <label
+                            key={test}
+                            className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.selectedFecesTests.includes(test)}
+                              onChange={() =>
+                                handleCheckboxToggle("selectedFecesTests", test)
+                              }
+                              className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
+                            />
+                            <span className="text-slate-700 truncate">{test}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Specific parasitology instructions..."
+                        value={formData.fecesNotes}
+                        onChange={(e) =>
+                          handleInputChange("fecesNotes", e.target.value)
+                        }
+                        className={inputStyle}
+                      />
+                    </fieldset>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <fieldset className="border border-slate-300 p-3 sm:p-4 space-y-3">
-                    <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">
-                      Nasal Directives
-                    </legend>
-                    <div className="space-y-1.5">
-                      {nasalTests.map((test) => (
-                        <label
-                          key={test}
-                          className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.selectedNasalTests.includes(test)}
-                            onChange={() =>
-                              handleCheckboxToggle("selectedNasalTests", test)
-                            }
-                            className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
-                          />
-                          <span className="text-slate-700 truncate">
-                            {test}
-                          </span>
-                        </label>
-                      ))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <fieldset className="border border-slate-300 p-3 sm:p-4 space-y-3">
+                        <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">
+                          Nasal Directives
+                        </legend>
+                        <div className="space-y-1.5">
+                          {nasalTests.map((test) => (
+                            <label
+                              key={test}
+                              className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.selectedNasalTests.includes(test)}
+                                onChange={() =>
+                                  handleCheckboxToggle("selectedNasalTests", test)
+                                }
+                                className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
+                              />
+                              <span className="text-slate-700 truncate">
+                                {test}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
+
+                      <fieldset className="border border-slate-300 p-3 sm:p-4 space-y-3">
+                        <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">
+                          Rumen Directives
+                        </legend>
+                        <div className="space-y-1.5">
+                          {rumenTests.map((test) => (
+                            <label
+                              key={test}
+                              className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.selectedRumenTests.includes(test)}
+                                onChange={() =>
+                                  handleCheckboxToggle("selectedRumenTests", test)
+                                }
+                                className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
+                              />
+                              <span className="text-slate-700 truncate">
+                                {test}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
                     </div>
-                  </fieldset>
-
-                  <fieldset className="border border-slate-300 p-3 sm:p-4 space-y-3">
-                    <legend className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-700 px-1">
-                      Rumen Directives
-                    </legend>
-                    <div className="space-y-1.5">
-                      {rumenTests.map((test) => (
-                        <label
-                          key={test}
-                          className="flex items-center space-x-2 text-xs cursor-pointer py-0.5"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.selectedRumenTests.includes(test)}
-                            onChange={() =>
-                              handleCheckboxToggle("selectedRumenTests", test)
-                            }
-                            className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
-                          />
-                          <span className="text-slate-700 truncate">
-                            {test}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                </div>
+                  </>
+                )}
               </div>
             )}
 
