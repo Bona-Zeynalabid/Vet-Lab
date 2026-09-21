@@ -99,55 +99,57 @@ export default function DoctorDiagnosisPage() {
   // Extract numeric value from a string like "10 mg/kg" -> 10
   const extractNumeric = (str) => {
     if (!str) return null;
-    const match = str.match(/^[\d.]+/);
+    const match = String(str).match(/[\d.]+/);
     return match ? parseFloat(match[0]) : null;
   };
 
-  // Auto‑fill concentration, dosage, and amount when medicine name changes
-  const autoFillMedicine = (index, medicineName) => {
-    const medicine = medicinesList.find(
-      (m) => m.name.toLowerCase() === medicineName.toLowerCase().trim()
-    );
-    if (!medicine) {
-      // If no match, leave fields as is (user might be typing freely)
-      return;
-    }
-
-    const updates = {};
-    if (medicine.concentration) updates.concentration = medicine.concentration;
-    if (medicine.doseRate) updates.dosage = medicine.doseRate;
-
-    // Calculate amount if weight and both doseRate/concentration are available
-    if (patientWeight && medicine.doseRate && medicine.concentration) {
-      const doseVal = extractNumeric(medicine.doseRate);
-      const concVal = extractNumeric(medicine.concentration);
-      if (doseVal !== null && concVal !== null && concVal > 0) {
-        const amount = (patientWeight * doseVal) / concVal;
-        updates.amount = amount.toFixed(2);
-      }
-    }
-
-    // Update only if we have something to set
-    if (Object.keys(updates).length > 0) {
-      setFormData((prev) => {
-        const updated = [...prev.medicines];
-        updated[index] = { ...updated[index], ...updates };
-        return { ...prev, medicines: updated };
-      });
-    }
+  // Extract the unit after the slash in concentration (e.g., "250 mg/mL" -> "mL")
+  const extractUnit = (concentration) => {
+    if (!concentration) return "";
+    const match = String(concentration).match(/\/\s*([a-zA-Z]+)/);
+    return match ? match[1] : "";
   };
 
+  // Compute amount = (patientWeight * doseRate) / concentration
+  const computeAmount = (medicine) => {
+    if (!patientWeight) return null;
+    const doseVal = extractNumeric(medicine.dosage);
+    const concVal = extractNumeric(medicine.concentration);
+    if (doseVal === null || concVal === null || concVal <= 0) return null;
+    const amount = (patientWeight * doseVal) / concVal;
+    const unit = extractUnit(medicine.concentration);
+    return unit ? `${amount.toFixed(2)} ${unit}` : amount.toFixed(2);
+  };
+
+  // Consolidated change handler – auto-fills concentration/dosage on name select,
+  // and recalculates amount whenever name, concentration, or dosage changes.
   const handleMedicineChange = (index, field, value) => {
     setFormData((prev) => {
       const updated = [...prev.medicines];
-      updated[index] = { ...updated[index], [field]: value };
+      const current = { ...updated[index], [field]: value };
+
+      // Step 1: If the name changed, look up the medicine and prefill concentration/dosage
+      if (field === "name") {
+        const medicine = medicinesList.find(
+          (m) => m.name.toLowerCase() === value.toLowerCase().trim()
+        );
+        if (medicine) {
+          if (medicine.concentration) current.concentration = medicine.concentration;
+          if (medicine.doseRate) current.dosage = medicine.doseRate;
+        }
+      }
+
+      // Step 2: If name, concentration, or dosage changed, recompute amount
+      if (field === "name" || field === "concentration" || field === "dosage") {
+        const computed = computeAmount(current);
+        if (computed !== null) {
+          current.amount = computed;
+        }
+      }
+
+      updated[index] = current;
       return { ...prev, medicines: updated };
     });
-
-    // If the field is "name", trigger auto‑fill
-    if (field === "name") {
-      autoFillMedicine(index, value);
-    }
   };
 
   const addMedicine = () => {
@@ -372,7 +374,7 @@ export default function DoctorDiagnosisPage() {
                 </datalist>
                 {patientWeight && (
                   <div className="text-xs text-slate-500 font-mono border-t border-slate-200 pt-2">
-                    Patient weight: <span className="font-semibold">{patientWeight} kg</span> – amount auto‑filled when medicine selected.
+                    Patient weight: <span className="font-semibold">{patientWeight} kg</span> – amount auto‑calculated from concentration × dosage.
                   </div>
                 )}
               </div>
