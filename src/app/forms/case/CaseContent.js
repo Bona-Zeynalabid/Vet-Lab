@@ -71,6 +71,7 @@ export default function VeterinaryCaseForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [savedRecord, setSavedRecord] = useState(null);
+  const [speciesFetchLoading, setSpeciesFetchLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     date: "",
@@ -365,6 +366,24 @@ export default function VeterinaryCaseForm() {
     },
   });
 
+  const fetchNextAnimalId = async (species) => {
+  if (!species || !species.trim()) return;
+  setSpeciesFetchLoading(true);
+  try {
+    const res = await fetch(
+      `/api/case/next-animal-id?species=${encodeURIComponent(species)}`
+    );
+    const data = await res.json();
+    if (data.animalId) {
+      setFormData((prev) => ({ ...prev, animalId: data.animalId }));
+    }
+  } catch (err) {
+    console.error("Failed to fetch animal ID:", err);
+  } finally {
+    setSpeciesFetchLoading(false);
+  }
+};
+
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!isCurrentStepValid()) {
@@ -376,7 +395,6 @@ export default function VeterinaryCaseForm() {
     setLoading(true);
 
     try {
-      // Use the number that was displayed (no new fetch)
       const finalCaseNumber = formData.caseNumber;
 
       const payload = buildPayload(finalCaseNumber);
@@ -387,12 +405,19 @@ export default function VeterinaryCaseForm() {
         data = await casesApi.create(payload);
       }
 
-      // --- Only increment the counter after a successful save ---
+      // Only increment the counter after a successful save
       if (!editId) {
         await fetch("/api/case/next-number?increment=true");
       }
 
       setSavedRecord(data);
+
+      // If self-diagnosis, jump straight to the diagnosis form
+      if (!editId && formData.lab === "self_diagnosis") {
+        router.push(`/forms/diagnosis?caseId=${finalCaseNumber}`);
+        return;
+      }
+
       setSubmitted(true);
     } catch (err) {
       setError(err.message);
@@ -407,7 +432,10 @@ export default function VeterinaryCaseForm() {
   const labelStyle =
     "block text-[11px] uppercase tracking-wider font-semibold text-slate-700 mb-1";
 
-  const showLabDirectives = formData.lab && formData.lab !== "diagnosis";
+  const showLabDirectives =
+    formData.lab &&
+    formData.lab !== "diagnosis" &&
+    formData.lab !== "self_diagnosis";
 
   return (
     <div className="min-h-screen bg-slate-100 p-3 sm:p-6 lg:p-8 font-sans text-slate-900">
@@ -585,16 +613,20 @@ export default function VeterinaryCaseForm() {
                     <label className={labelStyle}>
                       Species <span className="text-red-600">*</span>
                     </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Canine, Bovine, Feline"
-                      value={formData.species}
-                      onChange={(e) =>
-                        handleInputChange("species", e.target.value)
-                      }
-                      className={inputStyle}
-                    />
+                   <input
+  type="text"
+  required
+  placeholder="e.g. Canine, Bovine, Feline"
+  value={formData.species}
+  onChange={(e) => handleInputChange("species", e.target.value)}
+  onBlur={(e) => {
+   
+    if (!editId && e.target.value.trim() && !formData.animalId) {
+      fetchNextAnimalId(e.target.value);
+    }
+  }}
+  className={inputStyle}
+/>
                   </div>
                   <div>
                     <label className={labelStyle}>Head Count / Animals</label>
@@ -623,18 +655,22 @@ export default function VeterinaryCaseForm() {
                       className={inputStyle}
                     />
                   </div>
-                  <div>
-                    <label className={labelStyle}>Animal ID / Tag Number</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. AID-99402"
-                      value={formData.animalId}
-                      onChange={(e) =>
-                        handleInputChange("animalId", e.target.value)
-                      }
-                      className={inputStyle}
-                    />
-                  </div>
+                 <div>
+  <label className={labelStyle}>
+    Animal ID / Tag Number
+    {speciesFetchLoading && (
+      <span className="ml-2 text-[9px] text-slate-400 font-mono">(generating...)</span>
+    )}
+  </label>
+  <input
+    type="text"
+    placeholder="e.g. AID-99402"
+    value={formData.animalId}
+    onChange={(e) => handleInputChange("animalId", e.target.value)}
+    className={inputStyle}
+  />
+ 
+</div>
                 </div>
               </div>
             )}
@@ -720,7 +756,6 @@ export default function VeterinaryCaseForm() {
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {/* Demeanor - dropdown */}
                   <div>
                     <label className={labelStyle}>Demeanor</label>
                     <select
@@ -735,7 +770,6 @@ export default function VeterinaryCaseForm() {
                     </select>
                   </div>
 
-                  {/* Body Condition - dropdown */}
                   <div>
                     <label className={labelStyle}>Body Condition</label>
                     <select
@@ -751,7 +785,6 @@ export default function VeterinaryCaseForm() {
                     </select>
                   </div>
 
-                  {/* Mucous Membrane - dropdown */}
                   <div>
                     <label className={labelStyle}>Mucous Membrane</label>
                     <select
@@ -770,7 +803,6 @@ export default function VeterinaryCaseForm() {
                     </select>
                   </div>
 
-                  {/* Respiratory Rate - text */}
                   <div>
                     <label className={labelStyle}>Resp Rate (BPM)</label>
                     <input
@@ -784,7 +816,6 @@ export default function VeterinaryCaseForm() {
                     />
                   </div>
 
-                  {/* CRT - dropdown */}
                   <div>
                     <label className={labelStyle}>CRT</label>
                     <select
@@ -798,7 +829,6 @@ export default function VeterinaryCaseForm() {
                     </select>
                   </div>
 
-                  {/* Pulse Rate - text */}
                   <div>
                     <label className={labelStyle}>Pulse Rate</label>
                     <input
@@ -812,7 +842,6 @@ export default function VeterinaryCaseForm() {
                     />
                   </div>
 
-                  {/* Heart Sound - text */}
                   <div>
                     <label className={labelStyle}>Heart Auscultation</label>
                     <input
@@ -826,7 +855,6 @@ export default function VeterinaryCaseForm() {
                     />
                   </div>
 
-                  {/* GI Motility - text */}
                   <div>
                     <label className={labelStyle}>GI Motility</label>
                     <input
@@ -840,7 +868,6 @@ export default function VeterinaryCaseForm() {
                     />
                   </div>
 
-                  {/* Lung Sound - text (was missing, now added explicitly) */}
                   <div>
                     <label className={labelStyle}>Lung Sound</label>
                     <input
@@ -854,7 +881,6 @@ export default function VeterinaryCaseForm() {
                     />
                   </div>
 
-                  {/* Temperature - text (number) */}
                   <div>
                     <label className={labelStyle}>Temperature (°C)</label>
                     <input
@@ -891,13 +917,13 @@ export default function VeterinaryCaseForm() {
               <div className="space-y-6">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    Section 7: Lab Assignment & Directives
+                    Section 7: Case Routing & Directives
                   </h3>
                 </div>
 
                 <div>
                   <label className={labelStyle}>
-                    Lab / Department <span className="text-red-600">*</span>
+                    Route Case To <span className="text-red-600">*</span>
                   </label>
                   <select
                     value={formData.lab}
@@ -905,12 +931,33 @@ export default function VeterinaryCaseForm() {
                     className={inputStyle}
                     required
                   >
-                    <option value="">— Select Lab —</option>
-                    <option value="pathology">Pathology</option>
-                    <option value="bacteriology">Bacteriology</option>
-                    <option value="parasitology">Parasitology</option>
-                    <option value="diagnosis">Diagnosis (Direct)</option>
+                    <option value="">— Select Destination —</option>
+
+                    <optgroup label="🅐  Send to Laboratory">
+                      <option value="pathology">Pathology</option>
+                      <option value="bacteriology">Bacteriology</option>
+                      <option value="parasitology">Parasitology</option>
+                    </optgroup>
+
+                    <optgroup label="🅑  Refer to Doctor">
+                      <option value="diagnosis">Doctor Referral</option>
+                    </optgroup>
+
+                    <optgroup label="🅒  Process Internally">
+                      <option value="self_diagnosis">
+                        Self Diagnosis (Direct to Pharmacy)
+                      </option>
+                    </optgroup>
                   </select>
+                  <p className="text-[10px] font-mono text-slate-500 mt-1">
+                    {formData.lab === "self_diagnosis"
+                      ? "You will be redirected to the diagnosis form immediately after saving."
+                      : formData.lab === "diagnosis"
+                        ? "Select a doctor below to assign this case."
+                        : formData.lab
+                          ? "Select lab directives below, then commit."
+                          : "Choose how this case should be handled."}
+                  </p>
                 </div>
 
                 {formData.lab === "diagnosis" && (
@@ -1146,9 +1193,11 @@ export default function VeterinaryCaseForm() {
                   >
                     {loading
                       ? "Saving..."
-                      : editId
-                        ? "Update Record"
-                        : "Commit Record"}
+                      : formData.lab === "self_diagnosis"
+                        ? "Save & Start Diagnosis"
+                        : editId
+                          ? "Update Record"
+                          : "Commit Record"}
                   </button>
                 )}
               </div>

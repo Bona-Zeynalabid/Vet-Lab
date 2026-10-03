@@ -277,7 +277,7 @@ export default function DoctorDiagnosisPage() {
             </div>
             <p className="text-xs text-slate-700 leading-relaxed border-t border-slate-200 pt-4">Diagnosis saved and prescriptions sent to pharmacy for dispensing.</p>
             <div className="pt-2 flex gap-2">
-              <button type="button" onClick={handleReset} className="w-full sm:w-auto px-4 py-2.5 bg-slate-800 text-white text-xs uppercase tracking-widest font-bold hover:bg-slate-700 transition-colors">Log New Diagnosis</button>
+              
               <button type="button" onClick={() => router.push("/dashboard/diagnosis")} className="w-full sm:w-auto px-4 py-2.5 border border-slate-400 text-slate-700 text-xs uppercase tracking-widest font-bold hover:bg-slate-100 transition-colors">Back to Dashboard</button>
             </div>
           </div>

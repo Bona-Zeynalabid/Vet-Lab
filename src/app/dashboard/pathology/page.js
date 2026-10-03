@@ -106,7 +106,7 @@ export default function PathologyDashboardPage() {
           </h1>
         </div>
         <button
-          onClick={() => router.push("/dashboard/rooms")}
+          onClick={() => router.push("/dashboard")}
           className="px-4 py-2 bg-slate-800 text-white text-[10px] font-mono uppercase tracking-widest font-bold hover:bg-slate-700 transition-colors"
         >
           Back to Dashboard
