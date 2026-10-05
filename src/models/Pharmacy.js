@@ -10,7 +10,11 @@ const PharmacySchema = new mongoose.Schema({
     concentration: { type: String, default: '' },
     dosage: { type: String, default: '' },
     route: { type: String, enum: ['oral', 'subcutaneous', 'intramuscular', 'intravenous', 'topical'], default: 'oral' },
-    frequency: { type: String, enum: ['once', 'bid', 'tid', 'qid', 'once_daily', 'every_12h'], default: 'once_daily' },
+   frequency: {
+  type: String,
+  enum: ["FID", "BID", "TID", "QID", "SID", "Every 12h", "STAT", ""],
+  default: "SID",
+},
     duration: { type: String, default: '' },
     instructions: { type: String, default: '' },
     amount: { type: String, default: '' },

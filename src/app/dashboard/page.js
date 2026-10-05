@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   FolderIcon,
   Clock,
-  CheckCircle2,
   Users as UsersIcon,
   FolderOpen,
   ClipboardCheck,
@@ -22,7 +21,6 @@ import {
   Pill,
   ArrowRight,
   Eye,
-  Plus,
   Activity,
   TrendingUp,
   FileText,
@@ -33,12 +31,7 @@ import {
   Home,
   PlayCircle,
   PauseCircle,
-  Cat,
-  Dog,
-  Bird,
-  Rabbit,
-  Beef,
-  PawPrint,
+  CheckCircle2,
 } from "lucide-react";
 
 const allRooms = [
@@ -54,25 +47,21 @@ const allRooms = [
 
 const LAB_ROLES = ["pathology", "bacteriology", "parasitology"];
 
-// Map animal ID prefix → icon
-const getAnimalIcon = (animalId) => {
-  if (!animalId) return PawPrint;
-  const prefix = String(animalId).split("-")[0].toUpperCase();
-  const map = {
-    HOR: PawPrint,
-    CAT: Cat,
-    DOG: Dog,
-    COW: Beef,
-    GOA: PawPrint,
-    SHE: PawPrint,
-    PIG: PawPrint,
-    POU: Bird,
-    CAM: PawPrint,
-    DON: PawPrint,
-    RAB: Rabbit,
-    OTH: PawPrint,
-  };
-  return map[prefix] || PawPrint;
+// Emoji icon by animal ID prefix
+const getAnimalEmoji = (animalId, species = "") => {
+  const src = (animalId || species || "").toString().toLowerCase();
+  if (src.includes("hor") || src.includes("equine") || src.includes("horse")) return "🐴";
+  if (src.includes("cat") || src.includes("feline")) return "🐈";
+  if (src.includes("dog") || src.includes("canine")) return "🐕";
+  if (src.includes("cow") || src.includes("bovine") || src.includes("cattle")) return "🐄";
+  if (src.includes("goa") || src.includes("caprine") || src.includes("goat")) return "🐐";
+  if (src.includes("she") || src.includes("ovine") || src.includes("sheep")) return "🐑";
+  if (src.includes("pig") || src.includes("swine") || src.includes("porcine")) return "🐖";
+  if (src.includes("pou") || src.includes("poultry") || src.includes("chicken")) return "🐔";
+  if (src.includes("cam") || src.includes("camel")) return "🐪";
+  if (src.includes("don") || src.includes("donkey") || src.includes("mule")) return "🫏";
+  if (src.includes("rab") || src.includes("rabbit")) return "🐇";
+  return "🐾";
 };
 
 export default function UserDashboardPage() {
@@ -87,7 +76,6 @@ export default function UserDashboardPage() {
   const [userCount, setUserCount] = useState(0);
   const [today, setToday] = useState("");
 
-  // Mark mounted + compute date client-only
   useEffect(() => {
     setMounted(true);
     try {
@@ -115,7 +103,7 @@ export default function UserDashboardPage() {
     try {
       const userData = JSON.parse(decodeURIComponent(cookie.split("=")[1]));
       setUser(userData);
-      fetchActivityData(userData);
+      fetchActivityData();
     } catch (e) {
       router.push("/login");
     } finally {
@@ -124,7 +112,6 @@ export default function UserDashboardPage() {
   }, [router]);
 
   const fetchActivityData = async () => {
-    // ---- Fetch ALL cases (same for admin & user) ----
     try {
       const active = await casesApi.list();
       setActiveCases(active || []);
@@ -132,7 +119,6 @@ export default function UserDashboardPage() {
       console.error("Failed to fetch active cases:", err);
     }
 
-    // ---- Fetch ALL pharmacy records ----
     try {
       const pharmacy = await pharmacyApi.list();
       setPharmacyRecords(pharmacy || []);
@@ -140,7 +126,6 @@ export default function UserDashboardPage() {
       console.error("Failed to fetch pharmacy records:", err);
     }
 
-    // ---- Fetch ALL completed cases from Supabase ----
     try {
       const { data, error } = await supabase
         .from("completed_cases")
@@ -152,7 +137,6 @@ export default function UserDashboardPage() {
       console.error("Failed to fetch completed cases:", err);
     }
 
-    // ---- Fetch all users count (visible to everyone) ----
     try {
       const users = await userApi.list();
       setUserCount(users?.length || 0);
@@ -160,7 +144,6 @@ export default function UserDashboardPage() {
       console.error("Failed to fetch users:", err);
     }
 
-    // ---- Open rooms (client-only, safe) ----
     if (typeof window !== "undefined") {
       const unlocked = allRooms.filter((room) => {
         try {
@@ -185,7 +168,6 @@ export default function UserDashboardPage() {
     );
   }
 
-  const totalCases = activeCases.length + completedCases.length;
   const totalPatients = activeCases.length + completedCases.length;
 
   const labPendingCases = activeCases.filter((c) =>
@@ -286,7 +268,7 @@ export default function UserDashboardPage() {
           </div>
         </div>
 
-        {/* ===== KPI Cards (6) ===== */}
+        {/* ===== KPI Cards ===== */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {kpis.map((kpi) => {
             const Icon = kpi.icon;
@@ -357,223 +339,222 @@ export default function UserDashboardPage() {
           </div>
         </div>
 
-        {/* ===== Two Column Area ===== */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left – Recent Cases */}
-          <div className="lg:col-span-2 bg-white border border-slate-300 p-5">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+        {/* ===== Pharmacy Summary (compact, full width) ===== */}
+        <div className="bg-white border border-slate-300 p-5">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Pill className="w-4 h-4 text-slate-700" />
+              <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
+                Pharmacy Summary
+              </h2>
+            </div>
+            <Link
+              href="/dashboard/pharmacy"
+              className="text-[10px] font-mono uppercase tracking-widest text-slate-500 hover:text-slate-900 flex items-center gap-1"
+            >
+              <span>Open Pharmacy</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex items-center justify-between p-4 border border-slate-200 bg-amber-50">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-slate-700" />
-                <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
-                  Recent Cases
-                </h2>
+                <PauseCircle className="w-5 h-5 text-amber-600" />
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-800">
+                  Pending
+                </span>
               </div>
-              <Link
-                href="/dashboard/case-registration"
-                className="text-[10px] font-mono uppercase tracking-widest text-slate-500 hover:text-slate-900 flex items-center gap-1"
-              >
-                <span>View all</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
+              <span className="text-2xl font-mono font-bold text-amber-700">
+                {pharmacyPending.length}
+              </span>
             </div>
+           
+          </div>
+        </div>
 
-            {activeCases.length === 0 ? (
-              <div className="text-center py-10 border border-dashed border-slate-300 bg-slate-50">
-                <p className="text-[10px] font-mono uppercase text-slate-500">
-                  No active cases found
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-[11px] font-mono min-w-[750px]">
-                  <thead className="bg-slate-800 text-white uppercase text-[10px] tracking-wider">
-                    <tr>
-                      <th className="p-2.5">Case #</th>
-                      <th className="p-2.5">Patient</th>
-                      <th className="p-2.5">Owner</th>
-                      <th className="p-2.5">Species</th>
-                      <th className="p-2.5">Lab</th>
-                      <th className="p-2.5 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {activeCases.slice(0, 8).map((c) => {
-                      const animalId = c.patient?.animalId || "";
-                      const AnimalIcon = getAnimalIcon(animalId);
-                      return (
-                        <tr key={c._id} className="hover:bg-slate-50">
-                          <td className="p-2.5 font-semibold text-slate-900">
-                            {c.caseInfo?.caseNumber || "-"}
-                          </td>
-                          <td className="p-2.5">
-                            <div className="flex items-center gap-1.5">
-                              <AnimalIcon className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                              <span className="font-semibold text-slate-800">
-                                {animalId || "-"}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="p-2.5 text-slate-700">
-                            {c.owner?.fullName || "-"}
-                          </td>
-                          <td className="p-2.5 text-slate-700">
-                            {c.patient?.species || "-"}
-                          </td>
-                          <td className="p-2.5">
-                            <span className="px-2 py-0.5 bg-slate-100 border border-slate-300 text-slate-700 text-[9px] uppercase font-bold">
-                              {c.lab || "-"}
+        {/* ===== Recently Active Cases (full width) ===== */}
+        <div className="bg-white border border-slate-300 p-5">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-amber-600" />
+              <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
+                Recently Active Cases
+              </h2>
+            </div>
+            <Link
+              href="/dashboard/case-registration"
+              className="text-[10px] font-mono uppercase tracking-widest text-slate-500 hover:text-slate-900 flex items-center gap-1"
+            >
+              <span>View all</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          {activeCases.length === 0 ? (
+            <div className="text-center py-10 border border-dashed border-slate-300 bg-slate-50">
+              <p className="text-[10px] font-mono uppercase text-slate-500">
+                No active cases found
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[11px] font-mono min-w-[900px]">
+                <thead className="bg-slate-800 text-white uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th className="p-2.5">Case #</th>
+                    <th className="p-2.5">Patient</th>
+                    <th className="p-2.5">Owner</th>
+                    <th className="p-2.5">Species</th>
+                    <th className="p-2.5">Lab</th>
+                    <th className="p-2.5">Date</th>
+                    <th className="p-2.5 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {activeCases.slice(0, 10).map((c) => {
+                    const animalId = c.patient?.animalId || "";
+                    const species = c.patient?.species || "";
+                    const emoji = getAnimalEmoji(animalId, species);
+                    return (
+                      <tr key={c._id} className="hover:bg-slate-50">
+                        <td className="p-2.5 font-semibold text-slate-900">
+                          {c.caseInfo?.caseNumber || "-"}
+                        </td>
+                        <td className="p-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg leading-none shrink-0">
+                              {emoji}
                             </span>
-                          </td>
-                          <td className="p-2.5 text-right">
-                            <Link
-                              href={`/dashboard/case-registration/${c._id}`}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 border border-slate-400 text-slate-700 text-[9px] uppercase font-bold hover:bg-slate-100 transition-colors"
-                            >
-                              <Eye className="w-3 h-3" />
-                              View
-                            </Link>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                            <span className="font-semibold text-slate-800">
+                              {animalId || "-"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-2.5 text-slate-700">
+                          {c.owner?.fullName || "-"}
+                        </td>
+                        <td className="p-2.5 text-slate-700">
+                          {species || "-"}
+                        </td>
+                        <td className="p-2.5">
+                          <span className="px-2 py-0.5 bg-slate-100 border border-slate-300 text-slate-700 text-[9px] uppercase font-bold">
+                            {c.lab || "-"}
+                          </span>
+                        </td>
+                        <td className="p-2.5 text-slate-600">
+                          {mounted && c.caseInfo?.date
+                            ? new Date(c.caseInfo.date).toLocaleDateString()
+                            : "-"}
+                        </td>
+                        <td className="p-2.5 text-right">
+                          <Link
+                            href={`/dashboard/case-registration/${c._id}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 border border-slate-400 text-slate-700 text-[9px] uppercase font-bold hover:bg-slate-100 transition-colors"
+                          >
+                            <Eye className="w-3 h-3" />
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-            {activeCases.length > 8 && (
-              <div className="mt-3 text-[10px] font-mono text-slate-500 text-right">
-                Showing 8 of {activeCases.length}
-              </div>
-            )}
+          {activeCases.length > 10 && (
+            <div className="mt-3 text-[10px] font-mono text-slate-500 text-right">
+              Showing 10 of {activeCases.length}
+            </div>
+          )}
+        </div>
+
+        {/* ===== Recently Completed Cases (full width, same style) ===== */}
+        <div className="bg-white border border-slate-300 p-5">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
+                Recently Completed Cases
+              </h2>
+            </div>
+            <span className="text-[10px] font-mono text-slate-500 uppercase">
+              Archive
+            </span>
           </div>
 
-          {/* Right – Quick Actions + Pharmacy */}
-          <div className="space-y-6">
-            <div className="bg-white border border-slate-300 p-5">
-              <div className="flex items-center gap-2 border-b border-slate-200 pb-3 mb-4">
-                <Activity className="w-4 h-4 text-slate-700" />
-                <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
-                  Quick Actions
-                </h2>
-              </div>
-              <div className="space-y-2">
-                <Link
-                  href="/dashboard/case-registration"
-                  className="flex items-center justify-between p-3 border border-slate-300 bg-slate-50 hover:border-slate-800 hover:bg-slate-100 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Plus className="w-4 h-4 text-slate-800" />
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-900">
-                      Register Case
-                    </span>
-                  </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-                </Link>
-                <Link
-                  href="/dashboard/pharmacy"
-                  className="flex items-center justify-between p-3 border border-slate-300 bg-slate-50 hover:border-slate-800 hover:bg-slate-100 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Pill className="w-4 h-4 text-slate-800" />
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-900">
-                      Pharmacy Queue
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-mono font-bold bg-purple-100 text-purple-800 border border-purple-300 px-2 py-0.5">
-                    {pharmacyPending.length}
-                  </span>
-                </Link>
-                <Link
-                  href="/dashboard/rooms"
-                  className="flex items-center justify-between p-3 border border-slate-300 bg-slate-50 hover:border-slate-800 hover:bg-slate-100 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <FolderOpen className="w-4 h-4 text-slate-800" />
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-900">
-                      Manage Rooms
-                    </span>
-                  </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-                </Link>
-              </div>
+          {completedCases.length === 0 ? (
+            <div className="text-center py-10 border border-dashed border-slate-300 bg-slate-50">
+              <p className="text-[10px] font-mono uppercase text-slate-500">
+                No completed cases
+              </p>
             </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[11px] font-mono min-w-[900px]">
+                <thead className="bg-slate-800 text-white uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th className="p-2.5">Case #</th>
+                    <th className="p-2.5">Patient</th>
+                    <th className="p-2.5">Owner</th>
+                    <th className="p-2.5">Species</th>
+                    <th className="p-2.5">Veterinarian</th>
+                    <th className="p-2.5">Date</th>
+                    <th className="p-2.5 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {completedCases.slice(0, 10).map((c) => {
+                    const emoji = getAnimalEmoji("", c.species);
+                    return (
+                      <tr key={c.id} className="hover:bg-slate-50">
+                        <td className="p-2.5 font-semibold text-slate-900">
+                          {c.case_no || "-"}
+                        </td>
+                        <td className="p-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg leading-none shrink-0">
+                              {emoji}
+                            </span>
+                            <span className="font-semibold text-slate-800">
+                              {c.species || "-"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-2.5 text-slate-700">
+                          {c.owner_name || "-"}
+                        </td>
+                        <td className="p-2.5 text-slate-700">
+                          {c.species || "-"}
+                        </td>
+                        <td className="p-2.5 text-slate-700">
+                          {c.veterinarian_name || "-"}
+                        </td>
+                        <td className="p-2.5 text-slate-600">
+                          {mounted && c.date
+                            ? new Date(c.date).toLocaleDateString()
+                            : "-"}
+                        </td>
+                        <td className="p-2.5 text-right">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 text-[9px] uppercase font-bold">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Discharged
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-            {/* Pharmacy Summary */}
-            <div className="bg-white border border-slate-300 p-5">
-              <div className="flex items-center gap-2 border-b border-slate-200 pb-3 mb-4">
-                <Pill className="w-4 h-4 text-slate-700" />
-                <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
-                  Pharmacy Summary
-                </h2>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <PauseCircle className="w-4 h-4 text-amber-600" />
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-slate-700">
-                      Pending
-                    </span>
-                  </div>
-                  <span className="text-lg font-mono font-bold text-amber-700">
-                    {pharmacyPending.length}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <PlayCircle className="w-4 h-4 text-emerald-600" />
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-slate-700">
-                      Dispensed
-                    </span>
-                  </div>
-                  <span className="text-lg font-mono font-bold text-emerald-700">
-                    {pharmacyDispensed.length}
-                  </span>
-                </div>
-              </div>
+          {completedCases.length > 10 && (
+            <div className="mt-3 text-[10px] font-mono text-slate-500 text-right">
+              Showing 10 of {completedCases.length}
             </div>
-
-            {/* Recently Completed */}
-            <div className="bg-white border border-slate-300 p-5">
-              <div className="flex items-center gap-2 border-b border-slate-200 pb-3 mb-4">
-                <Bell className="w-4 h-4 text-slate-700" />
-                <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
-                  Recently Completed
-                </h2>
-              </div>
-              {completedCases.length === 0 ? (
-                <p className="text-[10px] font-mono text-slate-500 uppercase">
-                  No completed cases.
-                </p>
-              ) : (
-                <ul className="space-y-2.5">
-                  {completedCases.slice(0, 4).map((c) => (
-                    <li
-                      key={c.id}
-                      className="flex items-center justify-between text-[10px] font-mono pb-2 border-b border-slate-100 last:border-0"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                        <div className="min-w-0">
-                          <p className="font-semibold text-slate-800 truncate">
-                            {c.case_no}
-                          </p>
-                          <p className="text-slate-500 truncate">
-                            {c.owner_name || "-"}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-slate-500 shrink-0">
-                        {mounted && c.date
-                          ? new Date(c.date).toLocaleDateString()
-                          : "-"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* ===== Open Rooms ===== */}
