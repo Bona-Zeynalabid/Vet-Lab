@@ -4,17 +4,82 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { diagnosisApi, pharmacyApi, medicineApi, casesApi } from "@/lib/api";
 import { getLoggedInUserName } from "@/lib/userUtils";
+import { Sparkles, Loader2, X, Check, AlertCircle } from "lucide-react";
 
 const confirmationMethods = [
-  "Clinical Signs",
-  "Lab Results",
-  "Radiography",
-  "Ultrasound",
-  "Post-mortem",
-  "Response to Treatment",
-  "Biopsy",
-  "Culture Results",
+  "Clinical Signs", "Lab Results", "Radiography", "Ultrasound",
+  "Post-mortem", "Response to Treatment", "Biopsy", "Culture Results",
 ];
+
+const AI_TARGETS = [
+  { value: "primaryTentative", label: "Primary Tentative Diagnosis" },
+  { value: "differentialDiagnoses", label: "Differential Diagnoses" },
+  { value: "clinicalJustification", label: "Clinical Justification" },
+  { value: "definitiveDiagnosis", label: "Definitive Diagnosis" },
+  { value: "diagnosticNotes", label: "Diagnostic Notes" },
+];
+
+const defaultTargetFor = (title = "") => {
+  const t = title.toLowerCase();
+  if (t.includes("tentative")) return "primaryTentative";
+  if (t.includes("differential")) return "differentialDiagnoses";
+  if (t.includes("justification")) return "clinicalJustification";
+  if (t.includes("definitive")) return "definitiveDiagnosis";
+  if (t.includes("next steps") || t.includes("recommended")) return "diagnosticNotes";
+  return "diagnosticNotes";
+};
+
+const parseAiResponse = (text) => {
+  if (!text) return [];
+
+  // Strip any instruction/placeholder lines the model may have echoed
+  const cleaned = String(text)
+    .split("\n")
+    .filter((line) => {
+      const l = line.trim();
+      if (!l) return true;
+      // Drop lines that are clearly placeholders
+      if (/^<.*>$/.test(l)) return false;
+      if (/^[-•]\s*<.*>$/.test(l)) return false;
+      if (/^respond with/i.test(l)) return false;
+      if (/^keep the total/i.test(l)) return false;
+      if (/^you are a licensed veterinarian/i.test(l)) return false;
+      return true;
+    })
+    .join("\n")
+    .trim();
+
+  const normalized = `\n${cleaned}`;
+  const parts = normalized.split(/\n(?=\d+\.\s)/);
+  const out = [];
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const lines = trimmed.split("\n");
+    const header = lines[0];
+    const m = header.match(/^(\d+)\.\s*(.+)$/);
+    if (!m) continue;
+
+    const title = m[2].trim();
+    const content = lines.slice(1).join("\n").trim();
+
+    // Skip sections with no real content
+    if (!content || content.length < 3) continue;
+    // Skip sections where content is just a placeholder
+    if (/^<.*>$/.test(content)) continue;
+
+    out.push({
+      id: m[1],
+      title,
+      content,
+      selected: true,
+      target: defaultTargetFor(title),
+    });
+  }
+
+  return out;
+};
 
 export default function DoctorDiagnosisPage() {
   const searchParams = useSearchParams();
@@ -28,6 +93,13 @@ export default function DoctorDiagnosisPage() {
   const [savedRecord, setSavedRecord] = useState(null);
   const [medicinesList, setMedicinesList] = useState([]);
   const [patientWeight, setPatientWeight] = useState(null);
+  const [caseDetails, setCaseDetails] = useState(null);
+
+  // ----- AI state -----
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSections, setAiSections] = useState([]);
+  const [aiError, setAiError] = useState("");
+  const [showAiPanel, setShowAiPanel] = useState(false);
 
   const totalSteps = 4;
 
@@ -41,31 +113,22 @@ export default function DoctorDiagnosisPage() {
     definitiveDiagnosis: "",
     confirmationMethods: [],
     diagnosticNotes: "",
-    medicines: [
-      {
-        name: "",
-        concentration: "",
-        dosage: "",
-        route: "",
-        frequency: "",
-        duration: "",
-        amount: "",
-        instructions: "",
-      },
-    ],
+    medicines: [{ name: "", concentration: "", dosage: "", route: "", frequency: "", duration: "", amount: "", instructions: "" }],
     prognosis: "",
     followUpDate: "",
     followUpInstructions: "",
   });
 
-  // Fetch case data to get patient weight
+  // Fetch case details (weight + full record for AI)
   useEffect(() => {
     const fetchCase = async () => {
       if (!caseIdFromUrl) return;
       try {
         const result = await casesApi.list({ caseNumber: caseIdFromUrl });
         if (result && result.length > 0) {
-          const weight = result[0].patient?.weight;
+          const doc = result[0];
+          setCaseDetails(doc);
+          const weight = doc.patient?.weight;
           if (weight) setPatientWeight(Number(weight));
         }
       } catch (err) {
@@ -88,7 +151,6 @@ export default function DoctorDiagnosisPage() {
     }
   }, []);
 
-  // Fetch medicines for autocomplete suggestions
   useEffect(() => {
     const fetchMedicines = async () => {
       try {
@@ -115,21 +177,98 @@ export default function DoctorDiagnosisPage() {
     });
   };
 
-  // Extract numeric value from a string like "10 mg/kg" -> 10
+  // ===== AI handlers =====
+  const handleAskAi = async () => {
+    setAiLoading(true);
+    setAiError("");
+    setAiSections([]);
+    setShowAiPanel(true);
+
+    try {
+      let doc = caseDetails;
+      if (!doc && caseIdFromUrl) {
+        const result = await casesApi.list({ caseNumber: caseIdFromUrl });
+        doc = result?.[0] || null;
+        if (doc) setCaseDetails(doc);
+      }
+      if (!doc) throw new Error("Case details not found");
+
+      const res = await fetch("/api/ai-diagnosis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseData: doc }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+
+      const parsed = parseAiResponse(data.diagnosis || "");
+      if (parsed.length === 0) {
+        throw new Error("AI returned an unparsable response");
+      }
+      setAiSections(parsed);
+    } catch (err) {
+      setAiError(err.message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const applyAiResult = () => {
+    const toApply = aiSections.filter((s) => s.selected && s.content.trim());
+    if (toApply.length === 0) {
+      setAiError("Select at least one section to apply.");
+      return;
+    }
+    setFormData((prev) => {
+      const next = { ...prev };
+      toApply.forEach((sec) => {
+        const existing = (next[sec.target] || "").trim();
+        next[sec.target] = existing
+          ? `${existing}\n${sec.content}`
+          : sec.content;
+      });
+      return next;
+    });
+    setShowAiPanel(false);
+    setAiSections([]);
+    setAiError("");
+  };
+
+  const cancelAi = () => {
+    setShowAiPanel(false);
+    setAiSections([]);
+    setAiError("");
+  };
+
+  const toggleAiSection = (index) => {
+    setAiSections((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, selected: !s.selected } : s))
+    );
+  };
+
+  const changeAiSectionTarget = (index, target) => {
+    setAiSections((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, target } : s))
+    );
+  };
+
+  const toggleAllAiSections = (selected) => {
+    setAiSections((prev) => prev.map((s) => ({ ...s, selected })));
+  };
+
+  // ===== Medicine helpers =====
   const extractNumeric = (str) => {
     if (!str) return null;
     const match = String(str).match(/[\d.]+/);
     return match ? parseFloat(match[0]) : null;
   };
 
-  // Extract the unit after the slash in concentration (e.g., "250 mg/mL" -> "mL")
   const extractUnit = (concentration) => {
     if (!concentration) return "";
     const match = String(concentration).match(/\/\s*([a-zA-Z]+)/);
     return match ? match[1] : "";
   };
 
-  // Compute amount = (patientWeight * doseRate) / concentration
   const computeAmount = (medicine) => {
     if (!patientWeight) return null;
     const doseVal = extractNumeric(medicine.dosage);
@@ -140,31 +279,24 @@ export default function DoctorDiagnosisPage() {
     return unit ? `${amount.toFixed(2)} ${unit}` : amount.toFixed(2);
   };
 
-  // Consolidated change handler – auto-fills concentration/dosage on name select,
-  // and recalculates amount whenever name, concentration, or dosage changes.
   const handleMedicineChange = (index, field, value) => {
     setFormData((prev) => {
       const updated = [...prev.medicines];
       const current = { ...updated[index], [field]: value };
 
-      // Step 1: If the name changed, look up the medicine and prefill concentration/dosage
       if (field === "name") {
         const medicine = medicinesList.find(
-          (m) => m.name.toLowerCase() === value.toLowerCase().trim(),
+          (m) => m.name.toLowerCase() === value.toLowerCase().trim()
         );
         if (medicine) {
-          if (medicine.concentration)
-            current.concentration = medicine.concentration;
+          if (medicine.concentration) current.concentration = medicine.concentration;
           if (medicine.doseRate) current.dosage = medicine.doseRate;
         }
       }
 
-      // Step 2: If name, concentration, or dosage changed, recompute amount
       if (field === "name" || field === "concentration" || field === "dosage") {
         const computed = computeAmount(current);
-        if (computed !== null) {
-          current.amount = computed;
-        }
+        if (computed !== null) current.amount = computed;
       }
 
       updated[index] = current;
@@ -177,16 +309,7 @@ export default function DoctorDiagnosisPage() {
       ...prev,
       medicines: [
         ...prev.medicines,
-        {
-          name: "",
-          concentration: "",
-          dosage: "",
-          route: "",
-          frequency: "",
-          duration: "",
-          amount: "",
-          instructions: "",
-        },
+        { name: "", concentration: "", dosage: "", route: "", frequency: "", duration: "", amount: "", instructions: "" },
       ],
     }));
   };
@@ -224,10 +347,12 @@ export default function DoctorDiagnosisPage() {
     setError("");
     setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
   };
+
   const handleBack = () => {
     setError("");
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
+
   const handleSkip = () => {
     if (!isCurrentStepValid()) return;
     setError("");
@@ -240,6 +365,9 @@ export default function DoctorDiagnosisPage() {
     setError("");
     setLoading(false);
     setSavedRecord(null);
+    setAiSections([]);
+    setAiError("");
+    setShowAiPanel(false);
     setFormData({
       caseNumber: caseIdFromUrl || "",
       date: "",
@@ -250,18 +378,7 @@ export default function DoctorDiagnosisPage() {
       definitiveDiagnosis: "",
       confirmationMethods: [],
       diagnosticNotes: "",
-      medicines: [
-        {
-          name: "",
-          concentration: "",
-          dosage: "",
-          route: "",
-          frequency: "",
-          duration: "",
-          amount: "",
-          instructions: "",
-        },
-      ],
+      medicines: [{ name: "", concentration: "", dosage: "", route: "", frequency: "", duration: "", amount: "", instructions: "" }],
       prognosis: "",
       followUpDate: "",
       followUpInstructions: "",
@@ -315,7 +432,7 @@ export default function DoctorDiagnosisPage() {
               concentration: med.concentration,
               dosage: med.dosage,
               route: med.route || "oral",
-              frequency: med.frequency || "once_daily",
+              frequency: med.frequency || "SID",
               duration: med.duration,
               amount: med.amount,
               instructions: med.instructions,
@@ -366,14 +483,21 @@ export default function DoctorDiagnosisPage() {
                 Diagnosis Committed
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-600 font-mono break-all">
-                CASE: {formData.caseNumber} | VET: {formData.attendingVet} |
-                STAMP: {new Date().toISOString()}
+                CASE: {formData.caseNumber} | VET: {formData.attendingVet} | STAMP:{" "}
+                {new Date().toISOString()}
               </p>
             </div>
             <p className="text-xs text-slate-700 leading-relaxed border-t border-slate-200 pt-4">
               Diagnosis saved and prescriptions sent to pharmacy for dispensing.
             </p>
             <div className="pt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="w-full sm:w-auto px-4 py-2.5 bg-slate-800 text-white text-xs uppercase tracking-widest font-bold hover:bg-slate-700 transition-colors"
+              >
+                Log New Diagnosis
+              </button>
               <button
                 type="button"
                 onClick={() => router.push("/dashboard/diagnosis")}
@@ -405,9 +529,7 @@ export default function DoctorDiagnosisPage() {
                     <input
                       type="text"
                       value={formData.caseNumber}
-                      onChange={(e) =>
-                        handleInputChange("caseNumber", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("caseNumber", e.target.value)}
                       className={inputStyle}
                       readOnly={!!caseIdFromUrl}
                     />
@@ -420,9 +542,7 @@ export default function DoctorDiagnosisPage() {
                       type="date"
                       required
                       value={formData.date}
-                      onChange={(e) =>
-                        handleInputChange("date", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("date", e.target.value)}
                       className={inputStyle}
                     />
                   </div>
@@ -434,11 +554,7 @@ export default function DoctorDiagnosisPage() {
                       type="text"
                       required
                       readOnly
-                      placeholder="e.g. Dr. Smith"
                       value={formData.attendingVet}
-                      onChange={(e) =>
-                        handleInputChange("attendingVet", e.target.value)
-                      }
                       className={inputStyle}
                     />
                   </div>
@@ -448,22 +564,28 @@ export default function DoctorDiagnosisPage() {
 
             {currentStep === 2 && (
               <div className="space-y-4">
-                <div className="border-b border-slate-200 pb-2">
+                <div className="border-b border-slate-200 pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                     Stage 2: Tentative & Definitive Diagnosis
                   </h3>
+                  <button
+                    type="button"
+                    onClick={handleAskAi}
+                    disabled={aiLoading}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-[10px] font-mono uppercase tracking-widest font-bold hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{aiLoading ? "Asking AI..." : "Ask AI for Diagnosis"}</span>
+                  </button>
                 </div>
+
                 <div>
-                  <label className={labelStyle}>
-                    Primary Tentative Diagnosis
-                  </label>
+                  <label className={labelStyle}>Primary Tentative Diagnosis</label>
                   <input
                     type="text"
                     placeholder="e.g. Bacterial Bronchopneumonia"
                     value={formData.primaryTentative}
-                    onChange={(e) =>
-                      handleInputChange("primaryTentative", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("primaryTentative", e.target.value)}
                     className={inputStyle}
                   />
                 </div>
@@ -473,9 +595,7 @@ export default function DoctorDiagnosisPage() {
                     rows={3}
                     placeholder="One per line..."
                     value={formData.differentialDiagnoses}
-                    onChange={(e) =>
-                      handleInputChange("differentialDiagnoses", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("differentialDiagnoses", e.target.value)}
                     className={inputStyle}
                   />
                 </div>
@@ -485,9 +605,7 @@ export default function DoctorDiagnosisPage() {
                     rows={2}
                     placeholder="Supporting findings..."
                     value={formData.clinicalJustification}
-                    onChange={(e) =>
-                      handleInputChange("clinicalJustification", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("clinicalJustification", e.target.value)}
                     className={inputStyle}
                   />
                 </div>
@@ -497,9 +615,7 @@ export default function DoctorDiagnosisPage() {
                     type="text"
                     placeholder="e.g. Pasteurella multocida Bronchopneumonia"
                     value={formData.definitiveDiagnosis}
-                    onChange={(e) =>
-                      handleInputChange("definitiveDiagnosis", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("definitiveDiagnosis", e.target.value)}
                     className={inputStyle}
                   />
                 </div>
@@ -509,21 +625,14 @@ export default function DoctorDiagnosisPage() {
                   </legend>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {confirmationMethods.map((method) => (
-                      <label
-                        key={method}
-                        className="flex items-center space-x-2 text-xs cursor-pointer"
-                      >
+                      <label key={method} className="flex items-center space-x-2 text-xs cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={formData.confirmationMethods.includes(
-                            method,
-                          )}
+                          checked={formData.confirmationMethods.includes(method)}
                           onChange={() => handleCheckboxToggle(method)}
                           className="rounded-none border-slate-400 text-slate-800 focus:ring-0 shrink-0"
                         />
-                        <span className="text-slate-700 truncate">
-                          {method}
-                        </span>
+                        <span className="text-slate-700 truncate">{method}</span>
                       </label>
                     ))}
                   </div>
@@ -534,9 +643,7 @@ export default function DoctorDiagnosisPage() {
                     rows={2}
                     placeholder="Lab verification parameters..."
                     value={formData.diagnosticNotes}
-                    onChange={(e) =>
-                      handleInputChange("diagnosticNotes", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("diagnosticNotes", e.target.value)}
                     className={inputStyle}
                   />
                 </div>
@@ -558,10 +665,7 @@ export default function DoctorDiagnosisPage() {
                   </button>
                 </div>
                 {formData.medicines.map((med, idx) => (
-                  <div
-                    key={idx}
-                    className="border border-slate-300 p-3 bg-slate-50/50 space-y-3"
-                  >
+                  <div key={idx} className="border border-slate-300 p-3 bg-slate-50/50 space-y-3">
                     <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                       <span className="font-mono text-[10px] font-bold uppercase text-slate-600">
                         Medicine #{idx + 1}
@@ -584,9 +688,7 @@ export default function DoctorDiagnosisPage() {
                           list="medicines-datalist"
                           placeholder="e.g. Amoxicillin"
                           value={med.name}
-                          onChange={(e) =>
-                            handleMedicineChange(idx, "name", e.target.value)
-                          }
+                          onChange={(e) => handleMedicineChange(idx, "name", e.target.value)}
                           className={inputStyle}
                         />
                       </div>
@@ -596,13 +698,7 @@ export default function DoctorDiagnosisPage() {
                           type="text"
                           placeholder="e.g. 250 mg/mL"
                           value={med.concentration}
-                          onChange={(e) =>
-                            handleMedicineChange(
-                              idx,
-                              "concentration",
-                              e.target.value,
-                            )
-                          }
+                          onChange={(e) => handleMedicineChange(idx, "concentration", e.target.value)}
                           className={inputStyle}
                         />
                       </div>
@@ -612,9 +708,7 @@ export default function DoctorDiagnosisPage() {
                           type="text"
                           placeholder="e.g. 10 mg/kg"
                           value={med.dosage}
-                          onChange={(e) =>
-                            handleMedicineChange(idx, "dosage", e.target.value)
-                          }
+                          onChange={(e) => handleMedicineChange(idx, "dosage", e.target.value)}
                           className={inputStyle}
                         />
                       </div>
@@ -622,9 +716,7 @@ export default function DoctorDiagnosisPage() {
                         <label className={labelStyle}>Route</label>
                         <select
                           value={med.route}
-                          onChange={(e) =>
-                            handleMedicineChange(idx, "route", e.target.value)
-                          }
+                          onChange={(e) => handleMedicineChange(idx, "route", e.target.value)}
                           className={inputStyle}
                         >
                           <option value="">Select</option>
@@ -641,13 +733,7 @@ export default function DoctorDiagnosisPage() {
                         <label className={labelStyle}>Frequency</label>
                         <select
                           value={med.frequency}
-                          onChange={(e) =>
-                            handleMedicineChange(
-                              idx,
-                              "frequency",
-                              e.target.value,
-                            )
-                          }
+                          onChange={(e) => handleMedicineChange(idx, "frequency", e.target.value)}
                           className={inputStyle}
                         >
                           <option value="">Select</option>
@@ -666,13 +752,7 @@ export default function DoctorDiagnosisPage() {
                           type="text"
                           placeholder="e.g. 7 days"
                           value={med.duration}
-                          onChange={(e) =>
-                            handleMedicineChange(
-                              idx,
-                              "duration",
-                              e.target.value,
-                            )
-                          }
+                          onChange={(e) => handleMedicineChange(idx, "duration", e.target.value)}
                           className={inputStyle}
                         />
                       </div>
@@ -682,9 +762,7 @@ export default function DoctorDiagnosisPage() {
                           type="text"
                           placeholder="e.g. 21 tablets"
                           value={med.amount}
-                          onChange={(e) =>
-                            handleMedicineChange(idx, "amount", e.target.value)
-                          }
+                          onChange={(e) => handleMedicineChange(idx, "amount", e.target.value)}
                           className={inputStyle}
                         />
                       </div>
@@ -694,13 +772,7 @@ export default function DoctorDiagnosisPage() {
                           type="text"
                           placeholder="e.g. With food"
                           value={med.instructions}
-                          onChange={(e) =>
-                            handleMedicineChange(
-                              idx,
-                              "instructions",
-                              e.target.value,
-                            )
-                          }
+                          onChange={(e) => handleMedicineChange(idx, "instructions", e.target.value)}
                           className={inputStyle}
                         />
                       </div>
@@ -715,8 +787,8 @@ export default function DoctorDiagnosisPage() {
                 {patientWeight && (
                   <div className="text-xs text-slate-500 font-mono border-t border-slate-200 pt-2">
                     Patient weight:{" "}
-                    <span className="font-semibold">{patientWeight} kg</span> –
-                    amount auto‑calculated from concentration × dosage.
+                    <span className="font-semibold">{patientWeight} kg</span> – amount
+                    auto‑calculated from concentration × dosage.
                   </div>
                 )}
               </div>
@@ -734,9 +806,7 @@ export default function DoctorDiagnosisPage() {
                     <label className={labelStyle}>Prognosis</label>
                     <select
                       value={formData.prognosis}
-                      onChange={(e) =>
-                        handleInputChange("prognosis", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("prognosis", e.target.value)}
                       className={inputStyle}
                     >
                       <option value="">Select</option>
@@ -753,9 +823,7 @@ export default function DoctorDiagnosisPage() {
                     <input
                       type="date"
                       value={formData.followUpDate}
-                      onChange={(e) =>
-                        handleInputChange("followUpDate", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange("followUpDate", e.target.value)}
                       className={inputStyle}
                     />
                   </div>
@@ -766,9 +834,7 @@ export default function DoctorDiagnosisPage() {
                     rows={3}
                     placeholder="Owner directives, monitoring protocols..."
                     value={formData.followUpInstructions}
-                    onChange={(e) =>
-                      handleInputChange("followUpInstructions", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("followUpInstructions", e.target.value)}
                     className={inputStyle}
                   />
                 </div>
@@ -832,6 +898,166 @@ export default function DoctorDiagnosisPage() {
           </div>
         )}
       </div>
+
+      {/* ===== AI Diagnosis Panel ===== */}
+      {showAiPanel && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 py-6">
+            <div
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={cancelAi}
+            />
+            <div className="relative bg-white border-2 border-slate-800 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+              {/* Header */}
+              <div className="sticky top-0 z-10 bg-purple-700 text-white p-4 flex items-center justify-between border-b border-purple-800">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5" />
+                  <div>
+                    <span className="text-[9px] font-mono uppercase tracking-widest text-purple-200 block">
+                      AI Clinical Assistant
+                    </span>
+                    <h2 className="text-sm font-bold uppercase tracking-wider">
+                      Suggested Diagnosis — Select Sections to Apply
+                    </h2>
+                  </div>
+                </div>
+                <button
+                  onClick={cancelAi}
+                  className="p-1 border border-white/40 text-white hover:bg-white hover:text-purple-700 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-5 space-y-4">
+                {aiLoading && (
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+                    <p className="text-xs font-mono uppercase tracking-widest text-slate-500">
+                      Analyzing case data...
+                    </p>
+                  </div>
+                )}
+
+                {aiError && !aiLoading && (
+                  <div className="p-3 border-l-2 border-red-600 bg-red-50 text-red-800 text-xs font-mono flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{aiError}</span>
+                  </div>
+                )}
+
+                {aiSections.length > 0 && !aiLoading && (
+                  <>
+                    {/* Bulk controls */}
+                    <div className="flex items-center justify-between border border-slate-300 bg-slate-50 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleAllAiSections(true)}
+                          className="text-[10px] font-mono uppercase tracking-widest text-slate-700 hover:text-slate-900 underline"
+                        >
+                          Select all
+                        </button>
+                        <span className="text-slate-400">|</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleAllAiSections(false)}
+                          className="text-[10px] font-mono uppercase tracking-widest text-slate-700 hover:text-slate-900 underline"
+                        >
+                          Clear all
+                        </button>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-500 uppercase">
+                        {aiSections.filter((s) => s.selected).length} of{" "}
+                        {aiSections.length} selected
+                      </span>
+                    </div>
+
+                    {/* Section cards */}
+                    <div className="space-y-3">
+                      {aiSections.map((section, idx) => (
+                        <div
+                          key={idx}
+                          className={`border-2 transition-colors ${
+                            section.selected
+                              ? "border-purple-400 bg-purple-50/40"
+                              : "border-slate-200 bg-white"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3 p-3 border-b border-slate-200 bg-white">
+                            <input
+                              type="checkbox"
+                              checked={section.selected}
+                              onChange={() => toggleAiSection(idx)}
+                              className="mt-0.5 w-4 h-4 text-purple-600 focus:ring-purple-600 cursor-pointer shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-purple-800">
+                                {section.id}. {section.title}
+                              </p>
+                            </div>
+                            <div className="shrink-0">
+                              <select
+                                value={section.target}
+                                onChange={(e) =>
+                                  changeAiSectionTarget(idx, e.target.value)
+                                }
+                                className="text-[10px] font-mono bg-white border border-slate-300 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple-600"
+                              >
+                                {AI_TARGETS.map((t) => (
+                                  <option key={t.value} value={t.value}>
+                                    → {t.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                          <div className="p-3">
+                            <pre className="text-[11px] font-mono text-slate-800 whitespace-pre-wrap leading-relaxed">
+                              {section.content}
+                            </pre>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className="text-[10px] font-mono text-slate-500 italic">
+                      Applied content will be appended to the destination field. You
+                      can edit it afterwards.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* Footer */}
+              {!aiLoading && (
+                <div className="sticky bottom-0 bg-white border-t border-slate-200 p-4 flex flex-col sm:flex-row justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={cancelAi}
+                    className="px-4 py-2 border border-slate-400 text-slate-700 text-[10px] font-mono uppercase tracking-widest font-bold hover:bg-slate-100 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applyAiResult}
+                    disabled={
+                      aiSections.length === 0 ||
+                      aiSections.filter((s) => s.selected).length === 0
+                    }
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-purple-600 text-white text-[10px] font-mono uppercase tracking-widest font-bold hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Apply Selected
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
