@@ -2,6 +2,35 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Medicine from '@/models/Medicine';
 
+// ---------- Helpers: translate between frontend & DB ----------
+// Frontend sends "price" but the model stores "pricePerUnit".
+function toDbShape(input) {
+  const out = { ...input };
+  if ('price' in out) {
+    out.pricePerUnit = Number(out.price) || 0;
+    delete out.price;
+  }
+  if ('pricePerUnit' in out && !('price' in input)) {
+    out.pricePerUnit = Number(out.pricePerUnit) || 0;
+  }
+  if ('pricePerMlMg' in out) {
+    out.pricePerMlMg = Number(out.pricePerMlMg) || 0;
+  }
+  if ('stockQuantity' in out) {
+    out.stockQuantity = Number(out.stockQuantity) || 0;
+  }
+  return out;
+}
+
+// Add a "price" alias on the way out so the frontend sees what it expects.
+function toClientShape(doc) {
+  if (!doc) return doc;
+  const obj = typeof doc.toObject === 'function' ? doc.toObject() : { ...doc };
+  obj.price = obj.pricePerUnit ?? 0;
+  return obj;
+}
+
+// ---------- GET ----------
 export async function GET(request, { params }) {
   try {
     await dbConnect();
@@ -13,7 +42,7 @@ export async function GET(request, { params }) {
       if (!medicine) {
         return NextResponse.json({ error: 'Medicine not found' }, { status: 404 });
       }
-      return NextResponse.json(medicine);
+      return NextResponse.json(toClientShape(medicine));
     }
 
     const { searchParams } = new URL(request.url);
@@ -37,12 +66,13 @@ export async function GET(request, { params }) {
       .skip(skip)
       .limit(limit);
 
-    return NextResponse.json(medicines);
+    return NextResponse.json(medicines.map(toClientShape));
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
+// ---------- POST ----------
 export async function POST(request, { params }) {
   try {
     await dbConnect();
@@ -51,19 +81,19 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'POST to collection only' }, { status: 400 });
     }
 
-    const body = await request.json();
-
-    if (!body.name) {
+    const rawBody = await request.json();
+    if (!rawBody.name) {
       return NextResponse.json({ error: 'Medicine name is required' }, { status: 400 });
     }
 
-    const existing = await Medicine.findOne({ name: body.name.trim() });
+    const existing = await Medicine.findOne({ name: rawBody.name.trim() });
     if (existing) {
       return NextResponse.json({ error: 'Medicine with this name already exists' }, { status: 409 });
     }
 
-    const medicine = await Medicine.create(body);
-    return NextResponse.json(medicine, { status: 201 });
+    const dbBody = toDbShape(rawBody);
+    const medicine = await Medicine.create(dbBody);
+    return NextResponse.json(toClientShape(medicine), { status: 201 });
   } catch (error) {
     if (error.name === 'ValidationError') {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -72,32 +102,60 @@ export async function POST(request, { params }) {
   }
 }
 
+// ---------- PUT ----------
 export async function PUT(request, { params }) {
   try {
     await dbConnect();
     const { slug } = await params;
     const id = slug?.[0];
+
+    console.log("[PUT] id =", id);
+
     if (!id) {
-      return NextResponse.json({ error: 'ID required' }, { status: 400 });
+      return NextResponse.json({ error: "ID required" }, { status: 400 });
     }
 
-    const body = await request.json();
-    const updated = await Medicine.findByIdAndUpdate(id, body, {
-      new: true,
-      runValidators: true,
-    });
-    if (!updated) {
-      return NextResponse.json({ error: 'Medicine not found' }, { status: 404 });
+    const rawBody = await request.json();
+    console.log("[PUT] raw body =", JSON.stringify(rawBody));
+
+    // Strip immutable fields
+    delete rawBody._id;
+    delete rawBody.__v;
+    delete rawBody.createdAt;
+    delete rawBody.updatedAt;
+    delete rawBody.id;
+
+    // ✅ Translate "price" → "pricePerUnit"
+    const dbBody = toDbShape(rawBody);
+    console.log("[PUT] db body =", JSON.stringify(dbBody));
+
+    const existing = await Medicine.findById(id);
+    if (!existing) {
+      return NextResponse.json({ error: "Medicine not found" }, { status: 404 });
     }
-    return NextResponse.json(updated);
+
+    console.log("[PUT] BEFORE: pricePerUnit =", existing.pricePerUnit, "| pricePerMlMg =", existing.pricePerMlMg);
+
+    // Assign only fields present in dbBody
+    Object.keys(dbBody).forEach((key) => {
+      existing[key] = dbBody[key];
+    });
+
+    const saved = await existing.save();
+
+    console.log("[PUT] AFTER:  pricePerUnit =", saved.pricePerUnit, "| pricePerMlMg =", saved.pricePerMlMg);
+
+    return NextResponse.json(toClientShape(saved));
   } catch (error) {
-    if (error.name === 'ValidationError') {
+    console.error("[PUT] ERROR:", error);
+    if (error.name === "ValidationError") {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
+// ---------- DELETE ----------
 export async function DELETE(request, { params }) {
   try {
     await dbConnect();

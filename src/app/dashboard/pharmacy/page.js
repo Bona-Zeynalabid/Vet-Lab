@@ -208,41 +208,51 @@ export default function PharmacyDashboardPage() {
     }
   };
 
-  const handleEditMedicine = async (e) => {
-    e.preventDefault();
-    if (!editingMedicine?._id) {
-      setError("Missing medicine ID");
-      return;
-    }
-    setSaving(true);
-    try {
-      const payload = {
-        ...medicineForm,
-        price: parseFloat(medicineForm.price) || 0,
-        pricePerMlMg: parseFloat(medicineForm.pricePerMlMg) || 0,
-        stockQuantity: parseInt(medicineForm.stockQuantity) || 0,
-      };
-      const res = await fetch(
-        `/api/medicine/${encodeURIComponent(editingMedicine._id)}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || `Update failed (${res.status})`);
+ const handleEditMedicine = async (e) => {
+  e.preventDefault();
+  if (!editingMedicine?._id) {
+    setError("Missing medicine ID");
+    return;
+  }
+  setSaving(true);
+  try {
+    const payload = {
+      ...medicineForm,
+      price: parseFloat(medicineForm.price) || 0,
+      pricePerMlMg: parseFloat(medicineForm.pricePerMlMg) || 0,
+      stockQuantity: parseInt(medicineForm.stockQuantity) || 0,
+    };
+
+    const res = await fetch(
+      `/api/medicine/${encodeURIComponent(editingMedicine._id)}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify(payload),
       }
-      setShowEditMedicineModal(false);
-      resetMedicineForm();
-      fetchData();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || `Update failed (${res.status})`);
     }
-  };
+
+    // 🔥 INSTANT UPDATE – replace the row in local state with the server response
+    setMedicines((prev) =>
+      prev.map((m) => (m._id === data._id ? data : m))
+    );
+
+    setShowEditMedicineModal(false);
+    resetMedicineForm();
+
+   
+    fetchData();
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleDeleteMedicine = async (id) => {
     if (!id) {
