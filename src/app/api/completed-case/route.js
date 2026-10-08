@@ -36,8 +36,8 @@ export async function POST(request) {
     // Fetch diagnosis
     const diagnosis = await Diagnosis.findOne({ caseId });
 
-    // Fetch pharmacy
-    const pharmacy = await Pharmacy.findOne({ caseId });
+    // Fetch all pharmacy records for this case
+    const pharmacyRecords = await Pharmacy.find({ caseId });
 
     // Build lab method and result strings
     let sampleTaken = '';
@@ -62,10 +62,26 @@ export async function POST(request) {
       labResult = pathology.technician || '';
     }
 
-    // Build treatment
+    // Build treatment — comma-separated fields per medicine, "; " between medicines
     let treatmentGiven = '';
-    if (pharmacy && pharmacy.medicine) {
-      treatmentGiven = `${pharmacy.medicine.name || ''} ${pharmacy.medicine.dosage || ''} ${pharmacy.medicine.route || ''} ${pharmacy.medicine.frequency || ''}`.trim();
+    if (pharmacyRecords && pharmacyRecords.length > 0) {
+      const parts = pharmacyRecords
+        .filter((rec) => rec.medicine && rec.medicine.name)
+        .map((rec) => {
+          const m = rec.medicine;
+          const fields = [
+            m.name,
+            m.concentration ? `Conc: ${m.concentration}` : null,
+            m.dosage ? `Dose: ${m.dosage}` : null,
+            m.route ? `Route: ${m.route}` : null,
+            m.frequency ? `Freq: ${m.frequency}` : null,
+            m.duration ? `Duration: ${m.duration}` : null,
+            m.amount ? `Amount: ${m.amount}` : null,
+            m.instructions ? `Note: ${m.instructions}` : null,
+          ].filter(Boolean);
+          return fields.join(', ');
+        });
+      treatmentGiven = parts.join('; ');
     }
 
     // Prepare row

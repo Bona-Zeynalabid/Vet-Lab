@@ -230,7 +230,7 @@ export default function UserDashboardPage() {
       icon: UsersIcon,
       accent: "text-indigo-700",
       bg: "bg-indigo-50",
-      href: "/dashboard/admin/users",
+      href: "/dashboard",
     },
   ];
 
