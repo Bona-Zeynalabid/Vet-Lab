@@ -492,33 +492,25 @@ export const userApi = {
 };
 // Medicine API
 export const medicineApi = {
-  list: async (params = {}) => {
-    const qs = buildQueryString(params);
-    const res = await fetch(`${BASE_URL}/medicine${qs}`);
-    return handleResponse(res);
+  list: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetch(`/api/medicine${query ? `?${query}` : ""}`).then((r) => r.json());
   },
-  create: async (data) => {
-    const res = await fetch(`${BASE_URL}/medicine`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+  getById: (id) => fetch(`/api/medicine/${id}`).then((r) => r.json()),
+  create: (data) =>
+    fetch("/api/medicine", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    });
-    return handleResponse(res);
-  },
-  update: async (id, data) => {
-    const res = await fetch(`${BASE_URL}/medicine/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+    }).then((r) => r.json()),
+  update: (id, data) =>
+    fetch(`/api/medicine/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    });
-    return handleResponse(res);
-  },
-  delete: async (id) => {
-    const res = await fetch(`${BASE_URL}/medicine/${id}`, {
-      method: 'DELETE',
-    });
-    return handleResponse(res);
-  },
+    }).then((r) => r.json()),
+  delete: (id) =>
+    fetch(`/api/medicine/${id}`, { method: "DELETE" }).then((r) => r.json()),
 };
 
 // ... existing exports ...
