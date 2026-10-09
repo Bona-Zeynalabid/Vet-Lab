@@ -158,9 +158,7 @@ export default function UserDashboardPage() {
       <div className="border-b-2 border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500">
-              Practitioner Portal // {user?.role || "Practitioner"}
-            </span>
+            
           </div>
           <h1 className="text-2xl font-extrabold uppercase font-mono text-slate-900 tracking-tight">
             Good day, {user?.firstName} {user?.lastName}
