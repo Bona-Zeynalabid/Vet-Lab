@@ -62,25 +62,26 @@ export async function POST(request) {
       labResult = pathology.technician || '';
     }
 
-    // Build treatment — comma-separated fields per medicine, "; " between medicines
+    // Build treatment — plain comma-separated values, no labels
+    // Order: medicine name, concentration, amount, route, frequency, duration
     let treatmentGiven = '';
     if (pharmacyRecords && pharmacyRecords.length > 0) {
       const parts = pharmacyRecords
         .filter((rec) => rec.medicine && rec.medicine.name)
         .map((rec) => {
           const m = rec.medicine;
-          const fields = [
+          return [
             m.name,
-            m.concentration ? `Conc: ${m.concentration}` : null,
-            m.dosage ? `Dose: ${m.dosage}` : null,
-            m.route ? `Route: ${m.route}` : null,
-            m.frequency ? `Freq: ${m.frequency}` : null,
-            m.duration ? `Duration: ${m.duration}` : null,
-            m.amount ? `Amount: ${m.amount}` : null,
-            m.instructions ? `Note: ${m.instructions}` : null,
-          ].filter(Boolean);
-          return fields.join(', ');
-        });
+            m.concentration,
+            m.amount,
+            m.route,
+            m.frequency,
+            m.duration,
+          ]
+            .filter((v) => v !== undefined && v !== null && String(v).trim() !== '')
+            .join(', ');
+        })
+        .filter(Boolean);
       treatmentGiven = parts.join('; ');
     }
 
