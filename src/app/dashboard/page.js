@@ -12,12 +12,8 @@ import {
   UserGroupIcon,
   ClipboardDocumentCheckIcon,
   BeakerIcon,
-  BugAntIcon,
-  Square3Stack3DIcon,
-  UserIcon,
-  AcademicCapIcon,
-  ShieldCheckIcon,
   BuildingStorefrontIcon,
+  UserIcon,
   ArrowPathIcon,
   ArrowRightIcon,
   EyeIcon,
@@ -153,18 +149,15 @@ export default function UserDashboardPage() {
   ];
 
   return (
-    <div className="space-y-6 font-sans text-slate-900">
+    <div className="-m-3 sm:-m-4 lg:-m-6 p-3 sm:p-4 lg:p-6 min-h-full bg-orange-500 space-y-6 font-sans text-slate-900">
       {/* Page Header */}
       <div className="border-b-2 border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
         <div>
-          <div className="flex items-center gap-2">
-            
-          </div>
           <h1 className="text-2xl font-extrabold uppercase font-mono text-slate-900 tracking-tight">
             Good day, {user?.firstName} {user?.lastName}
           </h1>
         </div>
-        <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+        <div className="text-[10px] font-mono text-slate-700 uppercase tracking-widest">
           {mounted ? today || "Metrics Updated Real-Time" : "Metrics Updated Real-Time"}
         </div>
       </div>
@@ -275,7 +268,7 @@ export default function UserDashboardPage() {
         </div>
       </div>
 
-      {/* Recently Active Cases – full width table */}
+      {/* Recently Active Cases */}
       <div className="bg-white border-2 border-slate-300 p-5 shadow-xs">
         <div className="border-b pb-3 mb-3 flex items-center justify-between">
           <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-900">
@@ -368,7 +361,7 @@ export default function UserDashboardPage() {
         )}
       </div>
 
-      {/* Recently Completed Cases – full width table */}
+      {/* Recently Completed Cases */}
       <div className="bg-white border-2 border-slate-300 p-5 shadow-xs">
         <div className="border-b pb-3 mb-3 flex items-center justify-between">
           <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-900">
