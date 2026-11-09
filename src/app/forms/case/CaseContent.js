@@ -869,7 +869,7 @@ export default function VeterinaryCaseForm() {
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    Section 1: Case Identification
+                    Section 1: Case Registration
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
