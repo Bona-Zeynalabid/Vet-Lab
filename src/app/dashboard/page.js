@@ -149,22 +149,22 @@ export default function UserDashboardPage() {
   ];
 
   return (
-    <div className="-m-3 sm:-m-4 lg:-m-6 p-3 sm:p-4 lg:p-6 min-h-full bg-orange-500 space-y-6 font-sans text-slate-900">
+    <div className="-m-3 sm:-m-4 lg:-m-6 min-h-full bg-white">
       {/* Page Header */}
-      <div className="border-b-2 border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+      <div className="px-5 py-4 border-b-2 border-slate-300 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-extrabold uppercase font-mono text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-extrabold uppercase font-mono text-slate-900 tracking-tight">
             Good day, {user?.firstName} {user?.lastName}
           </h1>
         </div>
-        <div className="text-[10px] font-mono text-slate-700 uppercase tracking-widest">
+        <div className="text-[10px] font-mono text-slate-600 uppercase tracking-widest">
           {mounted ? today || "Metrics Updated Real-Time" : "Metrics Updated Real-Time"}
         </div>
       </div>
 
-      {/* KPI Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border-2 border-slate-300 p-5 shadow-xs flex flex-col justify-between">
+      {/* KPI Stats — one row, 4 cells with internal dividers */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 border-b-2 border-slate-300">
+        <div className="px-5 py-4 border-r-2 border-b-2 lg:border-b-0 border-slate-300 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
               Total Patients
@@ -173,11 +173,11 @@ export default function UserDashboardPage() {
           </div>
           <div className="mt-4 flex items-baseline justify-between">
             <span className="text-3xl font-extrabold font-mono text-slate-900">{totalPatients}</span>
-            <span className="text-[10px] font-mono text-slate-500 uppercase">Active + Archive</span>
+            <span className="text-[10px] font-mono text-slate-500 uppercase">A + Arc</span>
           </div>
         </div>
 
-        <div className="bg-white border-2 border-slate-300 p-5 shadow-xs flex flex-col justify-between">
+        <div className="px-5 py-4 border-b-2 lg:border-b-0 lg:border-r-2 border-slate-300 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
               Active Cases
@@ -196,10 +196,10 @@ export default function UserDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white border-2 border-slate-300 p-5 shadow-xs flex flex-col justify-between">
+        <div className="px-5 py-4 border-r-2 border-slate-300 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
-              Completed Cases
+              Completed
             </span>
             <CheckCircleIcon className="w-5 h-5 text-emerald-600" />
           </div>
@@ -209,7 +209,7 @@ export default function UserDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white border-2 border-slate-300 p-5 shadow-xs flex flex-col justify-between">
+        <div className="px-5 py-4 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
               Total Users
@@ -230,8 +230,8 @@ export default function UserDashboardPage() {
       </div>
 
       {/* Patient Flow Pipeline */}
-      <div className="bg-white border-2 border-slate-300 p-5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 mb-4 gap-2">
+      <div className="px-5 py-4 border-b-2 border-slate-300">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 mb-4 gap-2">
           <div>
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-900">
               Patient Flow Pipeline
@@ -245,7 +245,7 @@ export default function UserDashboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {patientFlow.map((stage) => {
             const IconComponent = stage.icon;
             return (
@@ -269,8 +269,8 @@ export default function UserDashboardPage() {
       </div>
 
       {/* Recently Active Cases */}
-      <div className="bg-white border-2 border-slate-300 p-5 shadow-xs">
-        <div className="border-b pb-3 mb-3 flex items-center justify-between">
+      <div className="px-5 py-4 border-b-2 border-slate-300">
+        <div className="border-b border-slate-200 pb-3 mb-3 flex items-center justify-between">
           <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-900">
             Recently Active Cases
           </h3>
@@ -362,8 +362,8 @@ export default function UserDashboardPage() {
       </div>
 
       {/* Recently Completed Cases */}
-      <div className="bg-white border-2 border-slate-300 p-5 shadow-xs">
-        <div className="border-b pb-3 mb-3 flex items-center justify-between">
+      <div className="px-5 py-4">
+        <div className="border-b border-slate-200 pb-3 mb-3 flex items-center justify-between">
           <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-900">
             Recently Completed Cases
           </h3>
